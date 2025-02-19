@@ -7,7 +7,10 @@
     "doc": "docs"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "ts-node src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "test": "jest"
   },
   "repository": {
     "type": "git",
@@ -28,7 +31,10 @@
     "typescript": "^5.7.3"
   },
   "dependencies": {
+    "@stellar/wallet-sdk": "^0.11.2",
     "backend-trustbrigecr": "file:",
-    "express": "^4.21.2"
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "stellar-sdk": "^13.1.0"
   }
 }
