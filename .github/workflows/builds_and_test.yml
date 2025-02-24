@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: Automated Builds and Tests
 
 on:
   pull_request:
