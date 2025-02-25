@@ -6,5 +6,6 @@ const router = express.Router();
 
 router.get("/users/:userId/loans", isAuthenticated, AnalyticsController.getUserLoans);
 router.get("/users/:userId/payments", isAuthenticated, AnalyticsController.getUserPayments);
+router.get("/users/:userId/reputation", isAuthenticated, AnalyticsController.getUserReputation);
 
 export default router;
