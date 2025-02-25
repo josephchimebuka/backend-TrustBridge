@@ -5,5 +5,6 @@ import { isAuthenticated } from "../middleware/auth";
 const router = express.Router();
 
 router.get("/users/:userId/loans", isAuthenticated, AnalyticsController.getUserLoans);
+router.get("/users/:userId/payments", isAuthenticated, AnalyticsController.getUserPayments);
 
 export default router;
