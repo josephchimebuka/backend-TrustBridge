@@ -6,6 +6,7 @@ import loanRoutes from './routes/loanRoutes';
 import authRoutes from './routes/authRoutes';
 import blockchainService from './services/blockchainService';
 import { isAuthenticated } from './middleware/auth';
+import db from './config/db';
 
 dotenv.config();
 const app = express();
@@ -27,6 +28,12 @@ app.use(session({
 // Initialize Passport and restore authentication state from session
 app.use(passport.initialize());
 app.use(passport.session());
+
+// Database Connection Check
+db.connect()
+  .then(() => console.log('✅ Connected to PostgreSQL'))
+  .catch((err: any) => console.error('❌ Database connection error:', err));
+
 
 // Health check route
 app.get('/health', async (req, res) => {
