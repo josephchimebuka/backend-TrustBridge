@@ -9,8 +9,11 @@ class LoanService {
     }
 
     const loans = await LoanRepository.getLoansByUserId(userId);
-    if (!loans.length) {
-    return { message: "No loans found for this user." };
+    if (loans.length === 0) {
+    return { 
+        message: "No loans found for this user.",
+        active_loans: [], completed_loans: []    
+    };
     }
     return {
       active_loans: loans.filter(loan => loan.status === "active"),
