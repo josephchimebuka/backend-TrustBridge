@@ -1,17 +1,20 @@
-import { PrismaClient, Notification, NotificationType } from '@prisma/client';
+import { PrismaClient, Notification, NotificationType, User } from '@prisma/client';
+import emailNotificationService from './emailNotificationService';
 
 const prisma = new PrismaClient();
 
 export class NotificationService {
   /**
-   * Create a new notification
+   * Create a new notification and optionally send an email
    */
   async createNotification(
     userId: string,
     type: NotificationType,
-    message: string
+    message: string,
+    sendEmail: boolean = false
   ): Promise<Notification> {
-    return prisma.notification.create({
+    // Create notification in database
+    const notification = await prisma.notification.create({
       data: {
         userId,
         type,
@@ -19,6 +22,30 @@ export class NotificationService {
         isRead: false,
       },
     });
+
+    // Send email if requested
+    if (sendEmail) {
+      try {
+        // Get user email and name
+        const user = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { email: true, name: true },
+        });
+
+        if (user && user.email) {
+          await emailNotificationService.sendEmail(
+            user.email,
+            user.name || 'User',
+            type,
+            message
+          );
+        }
+      } catch (error) {
+        console.error('Failed to send email notification:', error);
+      }
+    }
+
+    return notification;
   }
 
   /**
@@ -117,29 +144,29 @@ export class NotificationService {
   /**
    * Create a loan update notification
    */
-  async createLoanUpdateNotification(userId: string, message: string): Promise<Notification> {
-    return this.createNotification(userId, NotificationType.LOAN_UPDATE, message);
+  async createLoanUpdateNotification(userId: string, message: string, sendEmail: boolean = false): Promise<Notification> {
+    return this.createNotification(userId, NotificationType.LOAN_UPDATE, message, sendEmail);
   }
 
   /**
    * Create an escrow update notification
    */
-  async createEscrowUpdateNotification(userId: string, message: string): Promise<Notification> {
-    return this.createNotification(userId, NotificationType.ESCROW_UPDATE, message);
+  async createEscrowUpdateNotification(userId: string, message: string, sendEmail: boolean = false): Promise<Notification> {
+    return this.createNotification(userId, NotificationType.ESCROW_UPDATE, message, sendEmail);
   }
 
   /**
    * Create a payment received notification
    */
-  async createPaymentReceivedNotification(userId: string, message: string): Promise<Notification> {
-    return this.createNotification(userId, NotificationType.PAYMENT_RECEIVED, message);
+  async createPaymentReceivedNotification(userId: string, message: string, sendEmail: boolean = false): Promise<Notification> {
+    return this.createNotification(userId, NotificationType.PAYMENT_RECEIVED, message, sendEmail);
   }
 
   /**
    * Create a system alert notification
    */
-  async createSystemAlertNotification(userId: string, message: string): Promise<Notification> {
-    return this.createNotification(userId, NotificationType.SYSTEM_ALERT, message);
+  async createSystemAlertNotification(userId: string, message: string, sendEmail: boolean = false): Promise<Notification> {
+    return this.createNotification(userId, NotificationType.SYSTEM_ALERT, message, sendEmail);
   }
 }
 
