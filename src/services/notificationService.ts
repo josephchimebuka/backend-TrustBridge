@@ -1,5 +1,5 @@
 import { PrismaClient, Notification, NotificationType, User } from '@prisma/client';
-import emailNotificationService from './emailNotificationService';
+import EmailNotificationService from './emailService';
 
 const prisma = new PrismaClient();
 
@@ -33,7 +33,7 @@ export class NotificationService {
         });
 
         if (user && user.email) {
-          await emailNotificationService.sendEmail(
+          await EmailNotificationService.sendEmail(
             user.email,
             user.name || 'User',
             type,
