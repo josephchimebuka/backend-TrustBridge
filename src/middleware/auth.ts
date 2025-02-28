@@ -18,32 +18,6 @@ export const isAuthenticated = (req: Request, res: Response, next: NextFunction)
   res.status(401).json({ error: 'Unauthorized - Please login first' });
 };
 
-export const isLender = async (req: Request, res: Response, next: NextFunction) => {
-  if (req.isAuthenticated()) {
-    const userId = req.user?.id;
-    try {
-      const userRoles = await prisma.roleUser.findMany({
-        where: { userId },
-        include: {
-          role: true,
-        },
-      });
-
-      const hasLenderRole = userRoles.some((roleUser: { role: { name: string; }; }) => roleUser.role.name === 'lender');
-      
-      if (hasLenderRole) {
-        return next();
-      } else {
-        return res.status(403).json({ error: 'Forbidden - Access restricted to lenders only' });
-      }
-    } catch (error) {
-      return res.status(500).json({ error: 'Internal server error', message: error.message });
-    }
-  }
-  res.status(401).json({ error: 'Unauthorized - Please login first' });
-};
-
-
 export const authenticateUser = (req: Request, res: Response, next: NextFunction) => {
   passport.authenticate('wallet', (err: Error | null, user: AuthUser | false, info: AuthInfo) => {
     if (err) {
