@@ -3,10 +3,13 @@ import dotenv from 'dotenv';
 import session from 'express-session';
 import passport from './config/passport';
 import loanRoutes from './routes/loanRoutes';
+import auditRoutes from './routes/auditRoutes';
 import authRoutes from './routes/authRoutes';
+import analyticsRoutes from './routes/analyticsRoutes';
 import notificationRoutes from './routes/notificationRoutes';
 import blockchainService from './services/blockchainService';
-import { isAuthenticated } from './middleware/auth';
+import { isAuthenticated, isLender } from './middleware/auth';
+import db from './config/db';
 
 dotenv.config();
 const app = express();
@@ -29,6 +32,12 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
+// Database Connection Check
+db.connect()
+  .then(() => console.log('✅ Connected to PostgreSQL'))
+  .catch((err: any) => console.error('❌ Database connection error:', err));
+
+
 // Health check route
 app.get('/health', async (req, res) => {
   const isConnected = await blockchainService.testConnection();
@@ -41,6 +50,8 @@ app.get('/health', async (req, res) => {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/loans', isAuthenticated, loanRoutes); // Protect loan routes
+app.use('/api/audit', isAuthenticated, isLender, auditRoutes); // Protect audit routes
+app.use('/api/analytics', isAuthenticated, analyticsRoutes); // Protect analytics routes
 app.use('/api/notifications', notificationRoutes); // Notification Routes
 
 // Error handling middleware
