@@ -49,6 +49,7 @@ app.get('/health', async (req, res) => {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/loans', isAuthenticated, loanRoutes); // Protect loan routes
+app.use("/api", auditRoutes);
 app.use('/api/audit', isAuthenticated, isLender, auditRoutes); // Protect audit routes
 app.use('/api/analytics', isAuthenticated, analyticsRoutes); // Protect analytics routes
 
