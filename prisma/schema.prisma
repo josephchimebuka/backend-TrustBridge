@@ -107,10 +107,17 @@ model AuditLog {
   user      User?    @relation(fields: [userId], references: [id])
 }
 
+enum NotificationType {
+  LOAN_UPDATE
+  ESCROW_UPDATE
+  PAYMENT_RECEIVED
+  SYSTEM_ALERT
+}
+
 model Notification {
   id          String   @id @default(uuid())
   userId      String
-  type        String   // e.g., "loan_update", "escrow_update"
+  type      NotificationType
   message     String
   isRead      Boolean  @default(false)
   createdAt   DateTime @default(now())
