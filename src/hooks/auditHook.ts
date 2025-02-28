@@ -1,4 +1,4 @@
-import AuditService from "../services/auditService";
+import {logAction} from "../services/auditService";
 import prisma from "../config/prisma";
 
 export async function auditTrigger() {
@@ -15,7 +15,7 @@ export async function auditTrigger() {
       }
       if (userId) {
         console.log("updating logger");
-        await AuditService.logAction(userId, `${params.action} ${params.model}`, JSON.stringify(params.args.data));
+        await logAction(userId, `${params.action} ${params.model}`, JSON.stringify(params.args.data));
       }
     }
   

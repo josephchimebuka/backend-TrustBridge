@@ -1,6 +1,7 @@
 import express from "express";
 import prisma from "../config/prisma";
-import AuditService from "../services/auditService";
+import {logAction} from "../services/auditService";
+import AuditLogController from '../controllers/auditController';
 
 const router = express.Router();
 
@@ -15,11 +16,15 @@ router.get("/audit/logs", async (_req, res) => {
   }
 });
 
+
+router.get('/users/:userId/audit-logs', AuditLogController.getUserAuditLogs);
+
+
 // Manually add a log
 router.post("/audit/log", async (req, res) => {
   try {
     const { userId, action, details } = req.body;
-    await AuditService.logAction(userId, action, details);
+    await logAction(userId, action, details);
     res.json({ message: "Audit log recorded" });
   } catch (error) {
     const errMessage = error instanceof Error ? error.message : "An unknown error occurred";
