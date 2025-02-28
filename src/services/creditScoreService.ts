@@ -1,4 +1,4 @@
-import prisma from "./prismaClient";
+import prisma from "../config/prisma";
 
 class CreditScoreService {
   async calculateCreditScore(userId: string): Promise<number> {

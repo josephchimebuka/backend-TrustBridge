@@ -1,4 +1,4 @@
-import prisma from "../services/prismaClient";
+import prisma from "../config/prisma";
 import CreditScoreService from "../services/creditScoreService";
 
 export async function creditScoreTrigger() {
