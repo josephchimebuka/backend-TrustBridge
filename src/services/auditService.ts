@@ -1,4 +1,4 @@
-import prisma from "./prismaClient";
+import prisma from "../config/prisma";
 
 class AuditService {
   async logAction(userId: string | null, action: string, details?: string) {

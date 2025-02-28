@@ -1,5 +1,5 @@
 import AuditService from "../services/auditService";
-import prisma from "../services/prismaClient";
+import prisma from "../config/prisma";
 
 export async function auditTrigger() {
 
