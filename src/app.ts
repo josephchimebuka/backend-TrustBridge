@@ -2,7 +2,6 @@ import express from 'express';
 import dotenv from 'dotenv';
 import session from 'express-session';
 import passport from './config/passport';
-import creditScoreRoutes from "./routes/creditScoreRoutes";
 import loanRoutes from './routes/loanRoutes';
 import auditRoutes from './routes/auditRoutes';
 import authRoutes from './routes/authRoutes';
@@ -50,7 +49,7 @@ app.get('/health', async (req, res) => {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/loans', isAuthenticated, loanRoutes); // Protect loan routes
-app.use("/api", creditScoreRoutes);
+app.use("/api", auditRoutes);
 app.use('/api/audit', isAuthenticated, isLender, auditRoutes); // Protect audit routes
 app.use('/api/analytics', isAuthenticated, analyticsRoutes); // Protect analytics routes
 

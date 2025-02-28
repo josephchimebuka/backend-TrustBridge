@@ -1,5 +1,5 @@
+import prisma from "../config/prisma";
 import AuditLogRepository from '../repositories/auditRepository';
-import prisma from '../config/prisma';
 
 /**
  * Service for handling audit log-related operations.
@@ -104,6 +104,12 @@ class AuditLogService {
     await AuditLogRepository.deleteAuditLog(id);
     return { message: "Audit log deleted successfully" };
   }
+}
+
+export async function logAction(userId: string | null, action: string, details?: string) {
+  await prisma.auditLog.create({
+    data: { userId, action, details },
+  });
 }
 
 export default new AuditLogService();
