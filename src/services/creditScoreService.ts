@@ -1,3 +1,4 @@
+import { Loan, Payment } from "@prisma/client";
 import prisma from "../config/prisma";
 
 class CreditScoreService {
@@ -14,16 +15,18 @@ class CreditScoreService {
 
     let score = 300; // Base score
 
+    type ExtendedLoan = Loan & { payments: Payment[] };
+
     //Loan Repayment History (35%)
     const totalLoans = user.loans.length;
-    const completedLoans = user.loans.filter((loan) => loan.status === "completed").length;
+    const completedLoans = user.loans.filter((loan:ExtendedLoan) => loan.status === "completed").length;
     if (totalLoans > 0) {
       score += (completedLoans / totalLoans) * 35 * 5; // Scale factor
     }
 
     // On-time vs Late Payments (30%)
-    const totalPayments = user.loans.flatMap((loan) => loan.payments).length;
-    const latePayments = user.loans.flatMap((loan) => loan.payments).filter((p) => p.status === "late").length;
+    const totalPayments = user.loans.flatMap((loan:ExtendedLoan) => loan.payments).length;
+    const latePayments = user.loans.flatMap((loan:ExtendedLoan) => loan.payments).filter((p) => p.status === "late").length;
     if (totalPayments > 0) {
       const onTimeRate = (totalPayments - latePayments) / totalPayments;
       score += onTimeRate * 30 * 5;
@@ -35,8 +38,8 @@ class CreditScoreService {
     }
 
     //Loan Amount & Completion (15%)
-    const totalLoanAmount = user.loans.reduce((sum, loan) => sum + Number(loan.amount), 0);
-    const repaidLoanAmount = user.loans.filter((loan) => loan.status === "completed").reduce((sum, loan) => sum + Number(loan.amount), 0);
+    const totalLoanAmount = user.loans.reduce((sum, loan:ExtendedLoan) => sum + Number(loan.amount), 0);
+    const repaidLoanAmount = user.loans.filter((loan:ExtendedLoan) => loan.status === "completed").reduce((sum, loan:ExtendedLoan) => sum + Number(loan.amount), 0);
     if (totalLoanAmount > 0) {
       score += (repaidLoanAmount / totalLoanAmount) * 15 * 5;
     }
