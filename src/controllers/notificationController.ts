@@ -7,7 +7,7 @@ export class NotificationController {
    */
   async getNotifications(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user.id;
+      const userId = req.params.userId;
       const { unreadOnly, limit, offset } = req.query;
 
       const notifications = await notificationService.getUserNotifications(userId, {
@@ -28,7 +28,7 @@ export class NotificationController {
    */
   async getUnreadCount(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user.id;
+      const userId = req.params.userId;
       const count = await notificationService.countUnreadNotifications(userId);
 
       res.status(200).json({ count });
@@ -58,7 +58,7 @@ export class NotificationController {
    */
   async markAllAsRead(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user.id;
+      const userId = req.params.userId;
       const result = await notificationService.markAllAsRead(userId);
 
       res.status(200).json({ message: `Marked ${result.count} notifications as read` });
@@ -88,7 +88,7 @@ export class NotificationController {
    */
   async deleteAllNotifications(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user.id;
+      const userId = req.params.userId;
       const result = await notificationService.deleteAllNotifications(userId);
 
       res.status(200).json({ message: `Deleted ${result.count} notifications` });

@@ -8,21 +8,21 @@ const router = Router();
 router.use(isAuthenticated);
 
 // Get user notifications
-router.get('/', notificationController.getNotifications);
+router.get('/:userId', notificationController.getNotifications);
 
 // Get unread notification count
-router.get('/unread/count', notificationController.getUnreadCount);
+router.get('/:userId/unread/count', notificationController.getUnreadCount);
 
 // Mark notification as read
 router.patch('/:notificationId/read', notificationController.markAsRead);
 
 // Mark all notifications as read
-router.patch('/read-all', notificationController.markAllAsRead);
+router.patch('/:userId/read-all', notificationController.markAllAsRead);
 
 // Delete a notification
 router.delete('/:notificationId', notificationController.deleteNotification);
 
 // Delete all notifications
-router.delete('/', notificationController.deleteAllNotifications);
+router.delete('/:userId', notificationController.deleteAllNotifications);
 
 export default router;
