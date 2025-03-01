@@ -8,7 +8,7 @@ export async function creditScoreTrigger() {
     const result = await next(params);
 
     if (["create", "update"].includes(params.action) && ["Payment", "Reputation", "Loan"].includes(params.model!)) {
-      const userId = params.args.data.userId;
+      const userId = params.args.data?.userId || params.args.where?.userId;
       if (userId) {
         console.log(`Updating credit score for user: ${userId}`);
         await CreditScoreService.calculateCreditScore(userId);

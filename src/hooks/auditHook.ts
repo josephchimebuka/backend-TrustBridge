@@ -11,7 +11,7 @@ export async function auditTrigger() {
     if (["create", "update"].includes(params.action)) {
       let userId = null;
       if (params.model === "Payment" || params.model === "Loan") {
-        userId = params.args.data.userId;
+        userId = params.args.data?.userId || params.args.where?.userId;
       }
       if (userId) {
         console.log("updating logger");
