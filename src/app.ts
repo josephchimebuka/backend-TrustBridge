@@ -6,6 +6,7 @@ import loanRoutes from './routes/loanRoutes';
 import auditRoutes from './routes/auditRoutes';
 import authRoutes from './routes/authRoutes';
 import analyticsRoutes from './routes/analyticsRoutes';
+import notificationRoutes from './routes/notificationRoutes';
 import blockchainService from './services/blockchainService';
 import { isAuthenticated, isLender } from './middleware/auth';
 import db from './config/db';
@@ -40,9 +41,9 @@ db.connect()
 // Health check route
 app.get('/health', async (req, res) => {
   const isConnected = await blockchainService.testConnection();
-  res.json({ 
-    status: 'ok', 
-    blockchain: isConnected ? 'connected' : 'disconnected' 
+  res.json({
+    status: 'ok',
+    blockchain: isConnected ? 'connected' : 'disconnected'
   });
 });
 
@@ -51,6 +52,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/loans', isAuthenticated, loanRoutes); // Protect loan routes
 app.use('/api/audit', isAuthenticated, isLender, auditRoutes); // Protect audit routes
 app.use('/api/analytics', isAuthenticated, analyticsRoutes); // Protect analytics routes
+app.use('/api/notifications', isAuthenticated, notificationRoutes); // Notification Routes
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
