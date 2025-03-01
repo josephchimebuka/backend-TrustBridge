@@ -1,11 +1,7 @@
 import { Router } from 'express';
 import notificationController from '../controllers/notificationController';
-import { isAuthenticated } from '../middleware/auth';
 
 const router = Router();
-
-// All notification routes require authentication
-router.use(isAuthenticated);
 
 // Get user notifications
 router.get('/:userId', notificationController.getNotifications);

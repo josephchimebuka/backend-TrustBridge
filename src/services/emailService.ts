@@ -40,7 +40,7 @@ export class EmailNotificationService {
 
     // Define email templates for each notification type
     this.emailTemplates = {
-      [NotificationType.LOAN_UPDATE]: {
+      LOAN_UPDATE: {
         subject: 'Loan Update',
         template: (userName, message) => `
           <html>
@@ -54,7 +54,7 @@ export class EmailNotificationService {
           </html>
         `,
       },
-      [NotificationType.ESCROW_UPDATE]: {
+      ESCROW_UPDATE: {
         subject: 'Escrow Update',
         template: (userName, message) => `
           <html>
@@ -68,7 +68,7 @@ export class EmailNotificationService {
           </html>
         `,
       },
-      [NotificationType.PAYMENT_RECEIVED]: {
+      PAYMENT_RECEIVED: {
         subject: 'Payment Received',
         template: (userName, message) => `
           <html>
@@ -82,7 +82,7 @@ export class EmailNotificationService {
           </html>
         `,
       },
-      [NotificationType.SYSTEM_ALERT]: {
+      SYSTEM_ALERT: {
         subject: 'System Alert',
         template: (userName, message) => `
           <html>

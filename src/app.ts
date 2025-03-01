@@ -52,7 +52,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/loans', isAuthenticated, loanRoutes); // Protect loan routes
 app.use('/api/audit', isAuthenticated, isLender, auditRoutes); // Protect audit routes
 app.use('/api/analytics', isAuthenticated, analyticsRoutes); // Protect analytics routes
-app.use('/api/notifications', notificationRoutes); // Notification Routes
+app.use('/api/notifications', isAuthenticated, notificationRoutes); // Notification Routes
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
