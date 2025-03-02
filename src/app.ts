@@ -8,6 +8,7 @@ import creditScoreRoutes from './routes/creditScoreRoutes';
 import authRoutes from './routes/authRoutes';
 import analyticsRoutes from './routes/analyticsRoutes';
 import blockchainService from './services/blockchainService';
+import notificationRoutes from './routes/notificationRoutes';
 import { isAuthenticated, isLender } from './middleware/auth';
 import db from './config/db';
 
@@ -53,6 +54,7 @@ app.use('/api/loans', isAuthenticated, loanRoutes); // Protect loan routes
 app.use("/api", auditRoutes, creditScoreRoutes);
 app.use('/api/audit', isAuthenticated, isLender, auditRoutes); // Protect audit routes
 app.use('/api/analytics', isAuthenticated, analyticsRoutes); // Protect analytics routes
+app.use('/api/notifications', isAuthenticated, notificationRoutes); // Notification Routes
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

@@ -23,19 +23,18 @@ model Role {
 }
 
 model User {
-  id              String   @id @default(uuid())
-  name            String
-  email           String   @unique
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  roles           RoleUser[]
-  loans           Loan[]
-  payments        Payment[]
-  reputation      Reputation?
+  id         String   @id @default(uuid())
+  name       String
+  email      String   @unique
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  roles      RoleUser[]
+  loans      Loan[]
+  payments   Payment[]
+  reputation Reputation?
   recommendations Recommendation[]
-  creditScore     CreditScore?
-  auditLogs       AuditLog[]
-  notifications   Notification[]
+  auditLogs   AuditLog[]  
+  notifications Notification[] 
 }
 
 model RoleUser {
@@ -47,10 +46,10 @@ model RoleUser {
 }
 
 model Permission {
-  id          String   @id @default(uuid())
-  name        String   @unique
-  createdAt   DateTime @default(now())
-  roles       RolePermission[]
+  id         String   @id @default(uuid())
+  name       String   @unique
+  createdAt  DateTime @default(now())
+  roles      RolePermission[]
 }
 
 model RolePermission {
@@ -92,14 +91,6 @@ model Reputation {
   user            User     @relation(fields: [userId], references: [id])
 }
 
-model CreditScore {
-  id          String   @id @default(uuid())
-  userId      String   @unique
-  score       Int
-  lastUpdated DateTime @default(now())
-  user        User     @relation(fields: [userId], references: [id])
-}
-
 model Recommendation {
   id                 String   @id @default(uuid())
   userId             String
@@ -113,15 +104,22 @@ model AuditLog {
   action    String
   timestamp DateTime @default(now())
   details   String?
-  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id])
+}
+
+enum NotificationType {
+  LOAN_UPDATE
+  ESCROW_UPDATE
+  PAYMENT_RECEIVED
+  SYSTEM_ALERT
 }
 
 model Notification {
   id          String   @id @default(uuid())
   userId      String
-  type        String
+  type      NotificationType
   message     String
   isRead      Boolean  @default(false)
   createdAt   DateTime @default(now())
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id])
 }
