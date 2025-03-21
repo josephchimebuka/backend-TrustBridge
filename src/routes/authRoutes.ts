@@ -2,7 +2,7 @@ import express, { Request, Response, NextFunction, Router } from 'express';
 import passport from 'passport';
 import { findUserByWalletAddress, createUser, updateUserNonce } from '../models/user';
 import { isAuthenticated, authenticateUser } from '../middleware/auth';
-import { revokeRefreshToken } from '../services/tokenService';
+import { isTokenRevoked, revokeRefreshToken } from '../services/tokenService';
 
 const router: Router = express.Router();
 
@@ -78,6 +78,17 @@ router.use((err: any, req: Request, res: Response, next: NextFunction) => {
     return;
   }
   next(err);
+});
+
+// Middleware to check if the token is revoked
+router.use(async (req: Request, res: Response, next: NextFunction): Promise<any>  => {
+  if (req.headers.authorization) {
+    const token = req.headers.authorization.split(' ')[1];
+    if (await isTokenRevoked(token)) {
+      return res.status(401).json({ error: 'Token revoked' });
+    }
+  }
+  next();
 });
 
 export default router; 
