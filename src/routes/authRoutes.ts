@@ -2,6 +2,7 @@ import express, { Request, Response, NextFunction, Router } from 'express';
 import passport from 'passport';
 import { findUserByWalletAddress, createUser, updateUserNonce } from '../models/user';
 import { isAuthenticated, authenticateUser } from '../middleware/auth';
+import { revokeRefreshToken } from '../services/tokenService';
 
 const router: Router = express.Router();
 
@@ -32,14 +33,29 @@ router.post('/login', authenticateUser, (req: Request, res: Response) => {
 });
 
 // Logout
-router.post('/logout', isAuthenticated, (req: Request, res: Response, next: NextFunction) => {
-  req.logout((err) => {
-    if (err) {
-      return next(err);
+router.post(
+  "/logout",
+  isAuthenticated,
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { refresh_token } = req.body;
+
+      if (!refresh_token) {
+        res.status(400).json({ error: "Refresh token is required" });
+        return;
+      }
+      const revoked = await revokeRefreshToken(refresh_token);
+      if (!revoked) {
+        res.status(400).json({ error: "Invalid or expired refresh token" });
+        return;
+      }
+
+      res.json({ message: 'Successfully logged out' });
+    } catch (error) {
+      next(error);
     }
-    res.json({ message: 'Successfully logged out' });
-  });
-});
+  }
+);
 
 // Get current user
 router.get('/me', (req: Request, res: Response, next: NextFunction) => {
