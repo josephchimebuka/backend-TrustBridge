@@ -60,6 +60,9 @@
     "passport-custom": "^1.1.1",
     "passport-local": "^1.0.0",
     "pg-promise": "^11.10.2",
-    "stellar-sdk": "^13.1.0"
+    "stellar-sdk": "^13.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "@types/jsonwebtoken": "^9.0.5",
+    "prisma": "^5.8.0"
   }
 }
