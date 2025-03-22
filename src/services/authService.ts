@@ -24,7 +24,7 @@ class AuthService {
       data: { email: dto.email, password: hashedPassword },
     });
 
-    return { user, Tokens: this.generateTokens(user.id)};
+    return { user, Tokens: await this.generateTokens(user.id)};
   }
 
   async login(dto: LoginDto) {
@@ -34,7 +34,7 @@ class AuthService {
       throw new Error("Invalid credentials");
     }
 
-    return { user, Tokens: this.generateTokens(user.id)};
+    return { user};
   }
 
   async generateTokens(userId: string) {
