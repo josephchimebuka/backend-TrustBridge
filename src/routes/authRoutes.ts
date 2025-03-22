@@ -2,6 +2,8 @@ import express, { Request, Response, NextFunction, Router } from 'express';
 import passport from 'passport';
 import { findUserByWalletAddress, createUser, updateUserNonce } from '../models/user';
 import { isAuthenticated, authenticateUser } from '../middleware/auth';
+const authController = require('../controllers/authController');
+
 
 const router: Router = express.Router();
 
@@ -63,5 +65,16 @@ router.use((err: any, req: Request, res: Response, next: NextFunction) => {
   }
   next(err);
 });
+
+
+// Route to send verification email
+router.post('/send-verification-email', authController.sendVerificationEmail);
+
+
+// Route to verify email with token
+router.post('/verify-email', authController.verifyEmail);
+
+// routes/authRoutes.js (add this route)
+router.post('/register', authController.register);
 
 export default router; 

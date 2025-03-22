@@ -10,7 +10,7 @@ import analyticsRoutes from './routes/analyticsRoutes';
 import blockchainService from './services/blockchainService';
 import notificationRoutes from './routes/notificationRoutes';
 import { isAuthenticated, isLender } from './middleware/auth';
-import db from './config/db';
+import { dbConfig } from './config/db'; // Adjusted import for dbConfig
 
 dotenv.config();
 const app = express();
@@ -34,10 +34,9 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // Database Connection Check
-db.connect()
+dbConfig.connect() // Adjusted to use dbConfig
   .then(() => console.log('✅ Connected to PostgreSQL'))
   .catch((err: any) => console.error('❌ Database connection error:', err));
-
 
 // Health check route
 app.get('/health', async (req, res) => {

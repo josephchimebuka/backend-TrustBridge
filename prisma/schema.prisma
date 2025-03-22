@@ -35,6 +35,8 @@ model User {
   recommendations Recommendation[]
   auditLogs   AuditLog[]  
   notifications Notification[] 
+  isEmailVerified Boolean   @default(false)
+  tokens          Token[]
 }
 
 model RoleUser {
@@ -122,4 +124,16 @@ model Notification {
   isRead      Boolean  @default(false)
   createdAt   DateTime @default(now())
   user        User     @relation(fields: [userId], references: [id])
+}
+
+model Token {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  type      String   // verification or reset
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([token])
 }
