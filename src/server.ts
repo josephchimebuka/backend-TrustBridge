@@ -3,7 +3,6 @@ import dotenv from 'dotenv';
 import { auditTrigger } from './hooks/auditHook';
 import { creditScoreTrigger } from './hooks/creditScoreHooks';
 dotenv.config();
-
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {

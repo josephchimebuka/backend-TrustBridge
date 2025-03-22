@@ -24,8 +24,9 @@ model Role {
 
 model User {
   id         String   @id @default(uuid())
-  name       String
+  name       String?
   email      String   @unique
+  password     String
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   roles      RoleUser[]
@@ -35,6 +36,7 @@ model User {
   recommendations Recommendation[]
   auditLogs   AuditLog[]  
   notifications Notification[] 
+  refreshToken  String?
 }
 
 model RoleUser {
