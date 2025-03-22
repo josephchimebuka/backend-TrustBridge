@@ -1,7 +1,9 @@
 import express, { Request, Response, NextFunction, Router } from 'express';
 import passport from 'passport';
 import { findUserByWalletAddress, createUser, updateUserNonce } from '../models/user';
-import { isAuthenticated, authenticateUser } from '../middleware/auth';
+import { isAuthenticated, authenticateUser,forgotPassword, resetPassword } from '../middleware/auth';
+import expressAsyncHandler from 'express-async-handler';
+
 
 const router: Router = express.Router();
 
@@ -63,5 +65,8 @@ router.use((err: any, req: Request, res: Response, next: NextFunction) => {
   }
   next(err);
 });
+
+router.post('/forgot-password', expressAsyncHandler(forgotPassword));
+router.post('/reset-password', expressAsyncHandler(resetPassword));
 
 export default router; 
