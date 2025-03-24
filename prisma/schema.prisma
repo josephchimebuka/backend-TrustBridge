@@ -129,13 +129,21 @@ model Notification {
 }
 
 model RefreshToken {
-  id        String   @id @default(uuid())
-  token     String   @unique
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-  isRevoked Boolean  @default(false)
+  id              String    @id @default(uuid())
+  token           String    @unique
+  userId          String
+  user            User      @relation(fields: [userId], references: [id])
+  device          String?   // Device information (browser, OS, etc.)
+  deviceId        String?   // Unique identifier for the device
+  userAgent       String?   // User agent string from request
+  ipAddress       String?   // IP address of the request
+  expiresAt       DateTime
+  createdAt       DateTime  @default(now())
+  isRevoked       Boolean   @default(false)
+  family          String?   // Token lineage family to track related tokens
+  replacedByToken String?   // The token that replaced this one
 
   @@index([userId])
+  @@index([family])
+  @@index([deviceId])
 }

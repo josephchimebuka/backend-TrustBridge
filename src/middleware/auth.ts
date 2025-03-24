@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import passport from "passport";
 import prisma from "../config/prisma";
-import { verifyAccessToken } from "../utils/jwt";
+import { verifyAccessToken, REFRESH_TOKEN_COOKIE_NAME } from "../utils/jwt";
 
 interface AuthInfo {
   message?: string;
@@ -39,6 +39,16 @@ export const isAuthenticated = (
     res.status(401).json({ error: "Invalid or expired token" });
     return;
   }
+};
+
+/**
+ * Get refresh token from cookie if available
+ */
+export const getRefreshTokenFromCookie = (req: Request): string | null => {
+  if (req.cookies && req.cookies[REFRESH_TOKEN_COOKIE_NAME]) {
+    return req.cookies[REFRESH_TOKEN_COOKIE_NAME];
+  }
+  return null;
 };
 
 export const isLender = async (

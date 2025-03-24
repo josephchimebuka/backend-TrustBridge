@@ -1,6 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import session from "express-session";
+import cookieParser from "cookie-parser";
 import passport from "./config/passport";
 import loanRoutes from "./routes/loanRoutes";
 import auditRoutes from "./routes/auditRoutes";
@@ -18,6 +19,7 @@ const app = express();
 // Middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // Session configuration
 app.use(
