@@ -46,11 +46,11 @@ class CreditScoreService {
 
     score = Math.min(850, Math.max(300, Math.round(score)));
 
-    // await prisma.creditScore.upsert({
-    //   where: { userId },
-    //   update: { score, lastUpdated: new Date() },
-    //   create: { userId, score, lastUpdated: new Date() },
-    // });
+    await prisma.creditScore.upsert({
+      where: { userId },
+      update: { score, lastUpdated: new Date() },
+      create: { userId, score, lastUpdated: new Date() },
+    });
 
     return score;
   }

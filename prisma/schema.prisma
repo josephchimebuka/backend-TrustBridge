@@ -37,6 +37,7 @@ model User {
   auditLogs   AuditLog[]  
   notifications Notification[] 
   refreshToken  String?
+  creditScore CreditScore?
 }
 
 model RoleUser {
@@ -124,4 +125,12 @@ model Notification {
   isRead      Boolean  @default(false)
   createdAt   DateTime @default(now())
   user        User     @relation(fields: [userId], references: [id])
+}
+
+model CreditScore {
+  id    String @id @default(uuid())
+  score Int
+  userId  String @unique
+  user    User   @relation(fields: [userId], references: [id]) 
+  lastUpdated DateTime @updatedAt 
 }
