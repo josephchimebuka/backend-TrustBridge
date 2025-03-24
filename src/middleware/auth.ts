@@ -1,6 +1,7 @@
-import { Request, Response, NextFunction } from 'express';
-import passport from 'passport';
-import prisma from '../config/prisma';
+import { Request, Response, NextFunction } from "express";
+import passport from "passport";
+import prisma from "../config/prisma";
+import { verifyAccessToken, REFRESH_TOKEN_COOKIE_NAME } from "../utils/jwt";
 
 interface AuthInfo {
   message?: string;
@@ -11,22 +12,58 @@ interface AuthUser {
   walletAddress: string;
 }
 
-export const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
-  if (req.isAuthenticated()) {
-    return next();
+export const isAuthenticated = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  try {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader) {
+      res.status(401).json({ error: "No token provided" });
+      return;
+    }
+
+    const [bearer, token] = authHeader.split(" ");
+
+    if (bearer !== "Bearer" || !token) {
+      res.status(401).json({ error: "Invalid token format" });
+      return;
+    }
+
+    const payload = verifyAccessToken(token);
+    req.user = { walletAddress: payload.walletAddress };
+    next();
+  } catch (error) {
+    res.status(401).json({ error: "Invalid or expired token" });
+    return;
   }
-  res.status(401).json({ error: 'Unauthorized - Please login first' });
 };
 
-export const isLender = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  try {
+/**
+ * Get refresh token from cookie if available
+ */
+export const getRefreshTokenFromCookie = (req: Request): string | null => {
+  if (req.cookies && req.cookies[REFRESH_TOKEN_COOKIE_NAME]) {
+    return req.cookies[REFRESH_TOKEN_COOKIE_NAME];
+  }
+  return null;
+};
 
-    // const userId = req.user?.id; // Assuming user ID is attached to req.user after authentication. 
-    const userId = 'user-id';
+export const isLender = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const userId = req.user?.walletAddress;
 
     if (!userId) {
-      res.status(401).json({ error: 'Unauthorized - User not authenticated properly' });
-      return
+      res
+        .status(401)
+        .json({ error: "Unauthorized - User not authenticated properly" });
+      return;
     }
 
     const userRole = await prisma.role.findMany({
@@ -36,45 +73,66 @@ export const isLender = async (req: Request, res: Response, next: NextFunction):
             userId: userId,
           },
         },
-        name: 'lender',
+        name: "lender",
       },
     });
 
     if (userRole.length === 0) {
-      res.status(403).json({ error: 'Forbidden - You do not have access to the audit logs' });
-      return
+      res.status(403).json({
+        error: "Forbidden - You do not have access to the audit logs",
+      });
+      return;
     }
 
-    return next();
+    next();
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: "Internal Server Error" });
+    return;
   }
 };
 
-
-export const authenticateUser = (req: Request, res: Response, next: NextFunction) => {
-  passport.authenticate('wallet', (err: Error | null, user: AuthUser | false, info: AuthInfo) => {
-    if (err) {
-      return next(err);
-    }
-    if (!user) {
-      const status = info?.status || (info?.message?.includes('not found') ? 400 : 401);
-      return res.status(status).json({ error: info?.message || 'Authentication failed' });
-    }
-    req.logIn(user, (err) => {
+export const authenticateUser = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  passport.authenticate(
+    "wallet",
+    (err: Error | null, user: AuthUser | false, info: AuthInfo) => {
       if (err) {
-        return next(err);
+        next(err);
+        return;
       }
-      next();
-    });
-  })(req, res, next);
+      if (!user) {
+        const status =
+          info?.status || (info?.message?.includes("not found") ? 400 : 401);
+        res
+          .status(status)
+          .json({ error: info?.message || "Authentication failed" });
+        return;
+      }
+      req.logIn(user, (err) => {
+        if (err) {
+          next(err);
+          return;
+        }
+        next();
+      });
+    }
+  )(req, res, next);
 };
 
 // Custom error handler for authentication
-export const handleAuthError = (err: any, req: Request, res: Response, next: NextFunction) => {
-  if (err.name === 'AuthenticationError') {
-    return res.status(401).json({ error: err.message });
+export const handleAuthError = (
+  err: any,
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  if (err.name === "AuthenticationError") {
+    res.status(401).json({ error: err.message });
+    return;
   }
   next(err);
 };
