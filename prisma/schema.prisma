@@ -120,17 +120,37 @@ enum NotificationType {
 model Notification {
   id          String   @id @default(uuid())
   userId      String
-  type      NotificationType
+  type        NotificationType
   message     String
   isRead      Boolean  @default(false)
   createdAt   DateTime @default(now())
   user        User     @relation(fields: [userId], references: [id])
 }
 
-model CreditScore {
+  model CreditScore {
   id    String @id @default(uuid())
   score Int
   userId  String @unique
   user    User   @relation(fields: [userId], references: [id]) 
-  lastUpdated DateTime @updatedAt 
+  lastUpdated DateTime @updatedAt
+
+}
+model RefreshToken {
+  id              String    @id @default(uuid())
+  token           String    @unique
+  userId          String
+  user            User      @relation(fields: [userId], references: [id])
+  device          String?   // Device information (browser, OS, etc.)
+  deviceId        String?   // Unique identifier for the device
+  userAgent       String?   // User agent string from request
+  ipAddress       String?   // IP address of the request
+  expiresAt       DateTime
+  createdAt       DateTime  @default(now())
+  isRevoked       Boolean   @default(false)
+  family          String?   // Token lineage family to track related tokens
+  replacedByToken String?   // The token that replaced this one
+
+  @@index([userId])
+  @@index([family])
+  @@index([deviceId])
 }
