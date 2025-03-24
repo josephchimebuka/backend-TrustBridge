@@ -11,12 +11,24 @@ const dbConfig = pgp({
   database: process.env.DB_NAME,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
-  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
+  ssl: process.env.DB_SSL === 'true'
+    ? { 
+        rejectUnauthorized: process.env.DB_REJECT_UNAUTHORIZED !== 'false', 
+        ca: process.env.DB_CA_CERT || undefined 
+      }
+    : false,
 });
 
-// Separate configuration for email and token expiry
+const MIN_TOKEN_EXPIRY = 15 * 60 * 1000; 
+const MAX_TOKEN_EXPIRY = 30 * 60 * 1000; 
+
+const DEFAULT_TOKEN_EXPIRY = MIN_TOKEN_EXPIRY; 
+
 const config = {
-  EMAIL_TOKEN_EXPIRY: 24 * 60 * 60 * 1000,
+  EMAIL_TOKEN_EXPIRY: Math.min(
+    Math.max(Number(process.env.EMAIL_TOKEN_EXPIRY) || DEFAULT_TOKEN_EXPIRY, MIN_TOKEN_EXPIRY),
+    MAX_TOKEN_EXPIRY
+  ),
   EMAIL_SERVICE: process.env.EMAIL_SERVICE || 'gmail',
   EMAIL_USER: process.env.EMAIL_USER,
   EMAIL_PASSWORD: process.env.EMAIL_PASSWORD,

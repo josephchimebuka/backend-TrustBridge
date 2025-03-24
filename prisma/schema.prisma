@@ -126,10 +126,16 @@ model Notification {
   user        User     @relation(fields: [userId], references: [id])
 }
 
+
+enum TokenType {
+  VERIFICATION
+  RESET
+}
+
 model Token {
   id        String   @id @default(uuid())
   token     String   @unique
-  type      String   // verification or reset
+  type      TokenType
   userId    String
   user      User     @relation(fields: [userId], references: [id])
   expiresAt DateTime
