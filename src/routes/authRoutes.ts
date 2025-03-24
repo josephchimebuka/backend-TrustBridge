@@ -198,6 +198,14 @@ router.post("/refresh", async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    // Add expiration check
+    if (storedToken.expiresAt < new Date()) {
+      await revokeRefreshToken(refresh_token);
+      res.clearCookie(REFRESH_TOKEN_COOKIE_NAME);
+      res.status(401).json({ error: "Refresh token expired" });
+      return;
+    }
+
     // Verify the JWT refresh token
     const payload = verifyRefreshToken(refresh_token);
     if (payload.type !== "refresh") {

@@ -49,8 +49,7 @@ export const createRefreshToken = async (
   family?: string,
   previousToken?: string
 ): Promise<RefreshToken> => {
-  const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + 7); // 7 days from now
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days from now
 
   // Generate a new family ID if none provided (for new login sessions)
   const tokenFamily = family || generateTokenFamily();
@@ -98,6 +97,18 @@ export const findRefreshToken = async (
       },
     },
   });
+};
+
+export const cleanupExpiredTokens = async (): Promise<number> => {
+  const { count } = await prisma.refreshToken.deleteMany({
+    where: {
+      expiresAt: {
+        lt: new Date(), // Deletes tokens where expiresAt is less than current time
+      },
+    },
+  });
+
+  return count;
 };
 
 /**
