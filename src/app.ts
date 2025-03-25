@@ -14,6 +14,7 @@ import { isAuthenticated, isLender } from "./middleware/auth";
 import db from "./config/db";
 import { ScheduleModule } from "@nestjs/schedule";
 import tokenCleanupService from "./utils/cron";
+import { scheduleTokenCleanup } from './services/tokenCleanup';
 
 dotenv.config();
 const app = express();
@@ -81,5 +82,7 @@ app.use(
     res.status(500).json({ error: "Something went wrong!" });
   }
 );
+
+scheduleTokenCleanup(60);
 
 export default app;

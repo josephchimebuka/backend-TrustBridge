@@ -27,8 +27,6 @@ model User {
   name       String?
   email      String   @unique
   password     String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
   roles      RoleUser[]
   loans      Loan[]
   payments   Payment[]
@@ -36,10 +34,16 @@ model User {
   recommendations Recommendation[]
   auditLogs   AuditLog[]  
   notifications Notification[] 
-  refreshTokens RefreshToken[]
+  resetToken  String?
+  walletAddress String?         @unique
+  nonce        String?
+  createdAt    DateTime       @default(now())
+  lastLogin    DateTime?
+  refreshToken RefreshToken[]
   creditScore CreditScore?
   tokens  Token[]
   otpCodes       OtpCode[]     @relation("UserOtpCodes")
+  updatedAt    DateTime       @updatedAt
 }
 
 model RoleUser {
@@ -138,23 +142,19 @@ model Notification {
 
 }
 model RefreshToken {
-  id              String    @id @default(uuid())
-  token           String    @unique
+  id              String   @id @default(uuid())
+  token           String   @unique
   userId          String
-  user            User      @relation(fields: [userId], references: [id])
-  device          String?   // Device information (browser, OS, etc.)
-  deviceId        String?   // Unique identifier for the device
-  userAgent       String?   // User agent string from request
-  ipAddress       String?   // IP address of the request
+  user            User     @relation(fields: [userId], references: [id])
   expiresAt       DateTime
-  createdAt       DateTime  @default(now())
-  isRevoked       Boolean   @default(false)
-  family          String?   // Token lineage family to track related tokens
-  replacedByToken String?   // The token that replaced this one
-
-  @@index([userId])
-  @@index([family])
-  @@index([deviceId])
+  createdAt       DateTime @default(now())
+  isRevoked       Boolean  @default(false)
+  family          String?
+  replacedByToken String?
+  device          String?
+  deviceId        String?
+  userAgent       String?
+  ipAddress       String?
 }
 
 model OtpCode {

@@ -1,5 +1,7 @@
-import express, { Request, Response, NextFunction, Router } from "express";
-import passport from "passport";
+import express, { Request, Response, NextFunction, Router } from 'express';
+import passport from 'passport';
+import { isAuthenticated, authenticateUser,forgotPassword, resetPassword } from '../middleware/auth';
+import expressAsyncHandler from 'express-async-handler';
 import {
   findUserByWalletAddress,
   createUser,
@@ -8,7 +10,6 @@ import {
 import AuthController from "../../src/controllers/authController";
 import authService from "../../src/services/authService";
 import { RefreshTokenDto } from "../../src/dtos/auth.dto";
-import { isAuthenticated, authenticateUser } from "../middleware/auth";
 import {
   generateAccessToken,
   generateRefreshToken,
@@ -31,6 +32,7 @@ import {
 } from "../models/refreshToken";
 import { v4 as uuidv4 } from "uuid";
 import { loginRateLimiter } from "../../src/utils/ratelimiter";
+
 
 const router: Router = express.Router();
 
@@ -197,6 +199,14 @@ router.post("/refresh", async (req: Request, res: Response): Promise<void> => {
       // Clear the invalid cookie
       res.clearCookie(REFRESH_TOKEN_COOKIE_NAME);
       res.status(401).json({ error: "Invalid refresh token" });
+      return;
+    }
+
+    // Add expiration check
+    if (storedToken.expiresAt < new Date()) {
+      await revokeRefreshToken(refresh_token);
+      res.clearCookie(REFRESH_TOKEN_COOKIE_NAME);
+      res.status(401).json({ error: "Refresh token expired" });
       return;
     }
 
@@ -395,4 +405,9 @@ router.post(
   }
 );
 
-export default router;
+router.post('/forgot-password', expressAsyncHandler(forgotPassword));
+router.post('/reset-password', expressAsyncHandler(resetPassword));
+
+export default router; 
+
+

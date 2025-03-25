@@ -28,6 +28,7 @@ const auth_1 = require("./middleware/auth");
 const db_1 = __importDefault(require("./config/db"));
 const schedule_1 = require("@nestjs/schedule");
 const cron_1 = __importDefault(require("./utils/cron"));
+const tokenCleanup_1 = require("./services/tokenCleanup");
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 // Middlewares
@@ -75,4 +76,5 @@ app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).json({ error: "Something went wrong!" });
 });
+(0, tokenCleanup_1.scheduleTokenCleanup)(60);
 exports.default = app;

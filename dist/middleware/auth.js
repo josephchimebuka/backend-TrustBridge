@@ -12,8 +12,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.handleAuthError = exports.authenticateUser = exports.isLender = exports.getRefreshTokenFromCookie = exports.isAuthenticated = void 0;
+exports.resetPassword = exports.forgotPassword = exports.handleAuthError = exports.authenticateUser = exports.isLender = exports.getRefreshTokenFromCookie = exports.isAuthenticated = void 0;
 const passport_1 = __importDefault(require("passport"));
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
+const nodemailer_1 = __importDefault(require("nodemailer"));
 const prisma_1 = __importDefault(require("../config/prisma"));
 const jwt_1 = require("../utils/jwt");
 const isAuthenticated = (req, res, next) => {
@@ -116,3 +119,73 @@ const handleAuthError = (err, req, res, next) => {
     next(err);
 };
 exports.handleAuthError = handleAuthError;
+const forgotPassword = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { email } = req.body;
+    try {
+        const user = yield prisma_1.default.user.findUnique({ where: { email } });
+        if (!user) {
+            res.status(404).json({ error: 'User not found' });
+            return;
+        }
+        // Generate recovery token
+        const token = jsonwebtoken_1.default.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        // Store the token in the DB (optional but good for reference)
+        yield prisma_1.default.user.update({
+            where: { email },
+            data: {
+                resetToken: token
+            },
+        });
+        // Configure email transporter
+        const transporter = nodemailer_1.default.createTransport({
+            service: 'Gmail',
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS,
+            },
+        });
+        // Define mail options
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: email,
+            subject: 'Password Reset Request',
+            text: `Click the link to reset your password: ${process.env.FRONTEND_URL}/reset-password?token=${token}`,
+        };
+        // Send the email
+        yield transporter.sendMail(mailOptions);
+        res.status(200).json({ message: 'Password reset link sent successfully' });
+        return;
+    }
+    catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Internal Server Error' });
+        return;
+    }
+});
+exports.forgotPassword = forgotPassword;
+const resetPassword = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { token, new_password } = req.body;
+    try {
+        // Verify the JWT token
+        const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET);
+        // Find the user from the decoded token
+        const user = yield prisma_1.default.user.findUnique({ where: { id: decoded.userId } });
+        if (!user) {
+            res.status(400).json({ error: 'Invalid token or user not found' });
+            return;
+        }
+        // Hash the new password
+        const hashedPassword = yield bcryptjs_1.default.hash(new_password, 10);
+        // Update the user's password in the database
+        yield prisma_1.default.user.update({
+            where: { id: user.id },
+            data: { password: hashedPassword, resetToken: null }, // Remove the token after use
+        });
+        res.status(200).json({ message: 'Password reset successful' });
+    }
+    catch (error) {
+        console.error(error);
+        res.status(400).json({ error: 'Invalid or expired token' });
+    }
+});
+exports.resetPassword = resetPassword;

@@ -1,6 +1,10 @@
-import { Request, Response, NextFunction } from "express";
-import passport from "passport";
-import prisma from "../config/prisma";
+
+import { Request, Response, NextFunction } from 'express';
+import passport from 'passport';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
+import nodemailer from 'nodemailer';
+import prisma from '../config/prisma';
 import { verifyAccessToken, REFRESH_TOKEN_COOKIE_NAME } from "../utils/jwt";
 
 interface AuthInfo {
@@ -136,3 +140,88 @@ export const handleAuthError = (
   }
   next(err);
 };
+
+
+export const forgotPassword = async (req: Request, res: Response) => {
+  const { email } = req.body;
+
+  try {
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+
+    // Generate recovery token
+    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET!, { expiresIn: '1h' });
+
+    // Store the token in the DB (optional but good for reference)
+    await prisma.user.update({
+      where: { email },
+      data: { 
+        resetToken: token 
+
+      },
+    });
+
+    // Configure email transporter
+    const transporter = nodemailer.createTransport({
+      service: 'Gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    // Define mail options
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'Password Reset Request',
+      text: `Click the link to reset your password: ${process.env.FRONTEND_URL}/reset-password?token=${token}`,
+    };
+
+    // Send the email
+    await transporter.sendMail(mailOptions);
+
+    res.status(200).json({ message: 'Password reset link sent successfully' });
+    return;
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+    return;
+  }
+};
+
+
+export const resetPassword = async (req: Request, res: Response) => {
+  const { token, new_password } = req.body;
+
+  try {
+    // Verify the JWT token
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
+
+    // Find the user from the decoded token
+    const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+
+    if (!user) {
+      res.status(400).json({ error: 'Invalid token or user not found' });
+      return;
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(new_password, 10);
+
+    // Update the user's password in the database
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { password: hashedPassword, resetToken: null }, // Remove the token after use
+    });
+
+    res.status(200).json({ message: 'Password reset successful' });
+  } catch (error) {
+    console.error(error);
+    res.status(400).json({ error: 'Invalid or expired token' });
+  }
+};
+
