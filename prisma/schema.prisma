@@ -36,8 +36,10 @@ model User {
   recommendations Recommendation[]
   auditLogs   AuditLog[]  
   notifications Notification[] 
-  refreshToken  String?
+  refreshTokens RefreshToken[]
   creditScore CreditScore?
+  tokens  Token[]
+  otpCodes       OtpCode[]     @relation("UserOtpCodes")
 }
 
 model RoleUser {
@@ -153,4 +155,30 @@ model RefreshToken {
   @@index([userId])
   @@index([family])
   @@index([deviceId])
+}
+
+model OtpCode {
+  id         String   @id @default(uuid())
+  user       User     @relation("UserOtpCodes", fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  code       String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+}
+
+model Token {
+  id         String   @id @default(uuid())
+  userId     String
+  token      String   // Store hashed refresh tokens for security
+  expiresIn  DateTime
+  tokenType  TokenType
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+enum TokenType {
+  ACCESS
+  REFRESH
 }

@@ -6,8 +6,11 @@ import { createRefreshToken } from '../models/refreshToken';
 
 describe('Authentication', () => {
   const testUser = {
+    email: "test@example.com",  
+    password: "securePassword123", 
     walletAddress: '0x1234567890123456789012345678901234567890',
-    nonce: '123456'
+    nonce: '123456',
+    createdAt: new Date(),
   };
 
   beforeAll(async () => {

@@ -12,6 +12,8 @@ import blockchainService from "./services/blockchainService";
 import notificationRoutes from "./routes/notificationRoutes";
 import { isAuthenticated, isLender } from "./middleware/auth";
 import db from "./config/db";
+import { ScheduleModule } from "@nestjs/schedule";
+import tokenCleanupService from "./utils/cron";
 
 dotenv.config();
 const app = express();
@@ -61,6 +63,11 @@ app.use("/api/credit-score", isAuthenticated, creditScoreRoutes);
 app.use("/api/audit", isAuthenticated, isLender, auditRoutes);
 app.use("/api/analytics", isAuthenticated, analyticsRoutes);
 app.use("/api/notifications", isAuthenticated, notificationRoutes);
+
+
+// Start Token Cleanup Service (Runs Every Minute)
+ScheduleModule.forRoot();
+tokenCleanupService.cleanExpiredTokens();
 
 // Error handling middleware
 app.use(

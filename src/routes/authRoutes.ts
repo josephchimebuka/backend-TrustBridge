@@ -30,6 +30,7 @@ import {
   DeviceInfo,
 } from "../models/refreshToken";
 import { v4 as uuidv4 } from "uuid";
+import { loginRateLimiter } from "../../src/utils/ratelimiter";
 
 const router: Router = express.Router();
 
@@ -372,7 +373,8 @@ router.use(
 router.post("/register", AuthController.register);
 
 // Login user
-router.post("/login-web2", AuthController.login);
+// router.post("/login-web2", AuthController.login);
+router.post("/login-web2", loginRateLimiter, AuthController.login);
 
 // router.post("/refresh-token", AuthController.refreshToken);
 
