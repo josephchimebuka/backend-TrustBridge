@@ -23,22 +23,24 @@ model Role {
 }
 
 model User {
-  id            String         @id @default(uuid())
+  id         String   @id @default(uuid())
+  name       String
+  email      String   @unique
+  password    String
+  roles      RoleUser[]
+  loans      Loan[]
+  payments   Payment[]
+  reputation Reputation?
+  recommendations Recommendation[]
+  auditLogs   AuditLog[]  
+  notifications Notification[] 
+  resetToken  String?
   walletAddress String         @unique
   nonce        String
   createdAt    DateTime       @default(now())
   lastLogin    DateTime?
-  refreshTokens RefreshToken[]
-  name         String
-  email        String         @unique
+  refreshToken RefreshToken[]
   updatedAt    DateTime       @updatedAt
-  roles        RoleUser[]
-  loans        Loan[]
-  payments     Payment[]
-  reputation   Reputation?
-  recommendations Recommendation[]
-  auditLogs    AuditLog[]
-  notifications Notification[]
 }
 
 model RoleUser {
@@ -129,21 +131,17 @@ model Notification {
 }
 
 model RefreshToken {
-  id              String    @id @default(uuid())
-  token           String    @unique
+  id              String   @id @default(uuid())
+  token           String   @unique
   userId          String
-  user            User      @relation(fields: [userId], references: [id])
-  device          String?   // Device information (browser, OS, etc.)
-  deviceId        String?   // Unique identifier for the device
-  userAgent       String?   // User agent string from request
-  ipAddress       String?   // IP address of the request
+  user            User     @relation(fields: [userId], references: [id])
   expiresAt       DateTime
-  createdAt       DateTime  @default(now())
-  isRevoked       Boolean   @default(false)
-  family          String?   // Token lineage family to track related tokens
-  replacedByToken String?   // The token that replaced this one
-
-  @@index([userId])
-  @@index([family])
-  @@index([deviceId])
+  createdAt       DateTime @default(now())
+  isRevoked       Boolean  @default(false)
+  family          String?
+  replacedByToken String?
+  device          String?
+  deviceId        String?
+  userAgent       String?
+  ipAddress       String?
 }
