@@ -23,19 +23,24 @@ model Role {
 }
 
 model User {
-  id              String           @id @default(uuid())
-  name            String
-  email           String           @unique
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  roles           RoleUser[]
-  loans           Loan[]
-  payments        Payment[]
-  reputation      Reputation?
+  id         String   @id @default(uuid())
+  name       String
+  email      String   @unique
+  password    String
+  roles      RoleUser[]
+  loans      Loan[]
+  payments   Payment[]
+  reputation Reputation?
   recommendations Recommendation[]
-  auditLogs       AuditLog[]
-  notifications   Notification[]
-  RefreshToken    RefreshToken[]
+  auditLogs   AuditLog[]  
+  notifications Notification[] 
+  resetToken  String?
+  walletAddress String         @unique
+  nonce        String
+  createdAt    DateTime       @default(now())
+  lastLogin    DateTime?
+  refreshToken RefreshToken[]
+  updatedAt    DateTime       @updatedAt
 }
 
 model RoleUser {
@@ -118,25 +123,27 @@ enum NotificationType {
 }
 
 model Notification {
-  id        String           @id @default(uuid())
-  userId    String
-  type      NotificationType
-  message   String
-  isRead    Boolean          @default(false)
-  createdAt DateTime         @default(now())
-  user      User             @relation(fields: [userId], references: [id])
+  id          String   @id @default(uuid())
+  userId      String
+  type        NotificationType
+  message     String
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
 }
 
 model RefreshToken {
-  id        String   @id @default(uuid())
-  token     String   @unique
-  userId    String   @map("user_id")
-  expiresAt DateTime
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model RevokedToken {
-  id        String   @id @default(uuid())
-  token     String   @unique
-  revokedAt DateTime @default(now())
+  id              String   @id @default(uuid())
+  token           String   @unique
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  expiresAt       DateTime
+  createdAt       DateTime @default(now())
+  isRevoked       Boolean  @default(false)
+  family          String?
+  replacedByToken String?
+  device          String?
+  deviceId        String?
+  userAgent       String?
+  ipAddress       String?
 }
