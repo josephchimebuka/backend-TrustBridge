@@ -10,24 +10,31 @@ import analyticsRoutes from './routes/analyticsRoutes';
 import blockchainService from './services/blockchainService';
 import notificationRoutes from './routes/notificationRoutes';
 import { isAuthenticated, isLender } from './middleware/auth';
-import { dbConfig } from './config/db'; // Adjusted import for dbConfig
+import { dbConfig } from './config/db'; // Adjusted import for dbConfig";
+import cookieParser from "cookie-parser";
+import db from "./config/db";
+import { scheduleTokenCleanup } from './services/tokenCleanup';
 
 dotenv.config();
 const app = express();
 
 // Middlewares
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // Session configuration
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'your-secret-key',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
-  }
-}));
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "your-secret-key",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    },
+  })
+);
 
 // Initialize Passport and restore authentication state from session
 app.use(passport.initialize());
@@ -37,28 +44,42 @@ app.use(passport.session());
 dbConfig.connect() // Adjusted to use dbConfig
   .then(() => console.log('✅ Connected to PostgreSQL'))
   .catch((err: any) => console.error('❌ Database connection error:', err));
+db.connect()
+  .then(() => console.log("✅ Connected to PostgreSQL"))
+  .catch((err: any) => console.error("❌ Database connection error:", err));
 
 // Health check route
-app.get('/health', async (req, res) => {
+app.get("/health", async (req, res) => {
   const isConnected = await blockchainService.testConnection();
-  res.json({ 
-    status: 'ok', 
-    blockchain: isConnected ? 'connected' : 'disconnected' 
+  res.json({
+    status: "ok",
+    blockchain: isConnected ? "connected" : "disconnected",
   });
 });
 
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/loans', isAuthenticated, loanRoutes); // Protect loan routes
-app.use("/api", auditRoutes, creditScoreRoutes);
-app.use('/api/audit', isAuthenticated, isLender, auditRoutes); // Protect audit routes
-app.use('/api/analytics', isAuthenticated, analyticsRoutes); // Protect analytics routes
-app.use('/api/notifications', isAuthenticated, notificationRoutes); // Notification Routes
+// Public routes
+app.use("/api/auth", authRoutes);
+
+// Protected routes
+app.use("/api/loans", isAuthenticated, loanRoutes);
+app.use("/api/credit-score", isAuthenticated, creditScoreRoutes);
+app.use("/api/audit", isAuthenticated, isLender, auditRoutes);
+app.use("/api/analytics", isAuthenticated, analyticsRoutes);
+app.use("/api/notifications", isAuthenticated, notificationRoutes);
 
 // Error handling middleware
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Something went wrong!' });
-});
+app.use(
+  (
+    err: any,
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction
+  ) => {
+    console.error(err.stack);
+    res.status(500).json({ error: "Something went wrong!" });
+  }
+);
+
+scheduleTokenCleanup(60);
 
 export default app;

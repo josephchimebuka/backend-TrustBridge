@@ -26,8 +26,7 @@ model User {
   id         String   @id @default(uuid())
   name       String
   email      String   @unique
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  password    String
   roles      RoleUser[]
   loans      Loan[]
   payments   Payment[]
@@ -37,6 +36,13 @@ model User {
   notifications Notification[] 
   isEmailVerified Boolean   @default(false)
   tokens          Token[]
+  resetToken  String?
+  walletAddress String         @unique
+  nonce        String
+  createdAt    DateTime       @default(now())
+  lastLogin    DateTime?
+  refreshToken RefreshToken[]
+  updatedAt    DateTime       @updatedAt
 }
 
 model RoleUser {
@@ -119,27 +125,31 @@ enum NotificationType {
 model Notification {
   id          String   @id @default(uuid())
   userId      String
-  type      NotificationType
+  type        NotificationType
   message     String
   isRead      Boolean  @default(false)
   createdAt   DateTime @default(now())
   user        User     @relation(fields: [userId], references: [id])
 }
 
-
 enum TokenType {
   VERIFICATION
   RESET
 }
 
-model Token {
-  id        String   @id @default(uuid())
-  token     String   @unique
+model RefreshToken {
+  id              String   @id @default(uuid())
+  token           String   @unique
+  userId        type      TokenType   String
   type      TokenType
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-
-  @@index([token])
+  user            User     @relation(fields: [userId], references: [id])
+  expiresAt       DateTime
+  createdAt       DateTime @default(now())
+  isRevoked       Boolean  @default(false)
+  family          String?
+  replacedByToken String?
+  device          String?
+  deviceId        String?
+  userAgent       String?
+  ipAddress       String?
 }
