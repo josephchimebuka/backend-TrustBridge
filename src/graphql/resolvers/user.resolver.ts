@@ -76,6 +76,20 @@ export const userResolvers = {
                 throw new GraphQLError('User already exists');
             }
 
+            // Validate and fetch roles
+            const roles = await prisma.role.findMany({
+                where: {
+                    id: { in: roleIds },
+                    // If no specific IDs are provided, default to 'USER' role
+                    OR: roleIds.length === 0 ? [{ name: 'USER' }] : undefined
+                }
+            });
+
+            // If no valid roles found, throw an error
+            if (roles.length === 0) {
+                throw new GraphQLError('Invalid or no roles provided');
+            }
+
             // Hash password
             const hashedPassword = await bcrypt.hash(password, 10);
 
