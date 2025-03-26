@@ -30,6 +30,7 @@ import {
 } from "../models/refreshToken";
 import { v4 as uuidv4 } from "uuid";
 import errorHandler from '../middleware/errorHandler'; // Import the global error handler
+import { validateRegister, validateVerifyEmail, checkValidationResult } from '../middleware/validation'; // Import validation middleware
 
 const router: Router = express.Router();
 
@@ -358,9 +359,17 @@ router.post('/reset-password', expressAsyncHandler(resetPassword));
 router.post('/send-verification-email', expressAsyncHandler(authController.sendVerificationEmail));
 
 // Route to verify email with token
-router.post('/verify-email', expressAsyncHandler(authController.verifyEmail));
+router.post('/verify-email', 
+  validateVerifyEmail, 
+  checkValidationResult, 
+  expressAsyncHandler(authController.verifyEmail)
+);
 
 // Route to register a new user
-router.post('/register', expressAsyncHandler(authController.register));
+router.post('/register', 
+  validateRegister, 
+  checkValidationResult, 
+  expressAsyncHandler(authController.register)
+);
 
 export default router;
