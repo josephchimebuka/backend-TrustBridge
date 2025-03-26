@@ -10,10 +10,11 @@ import analyticsRoutes from './routes/analyticsRoutes';
 import blockchainService from './services/blockchainService';
 import notificationRoutes from './routes/notificationRoutes';
 import { isAuthenticated, isLender } from './middleware/auth';
-import { dbConfig } from './config/db'; // Adjusted import for dbConfig";
+import { dbConfig } from './config/db'; // Adjusted import for dbConfig
 import cookieParser from "cookie-parser";
 import db from "./config/db";
 import { scheduleTokenCleanup } from './services/tokenCleanup';
+import errorHandler from './middleware/errorHandler'; // Import the error handler
 
 dotenv.config();
 const app = express();
@@ -44,9 +45,6 @@ app.use(passport.session());
 dbConfig.connect() // Adjusted to use dbConfig
   .then(() => console.log('✅ Connected to PostgreSQL'))
   .catch((err: any) => console.error('❌ Database connection error:', err));
-db.connect()
-  .then(() => console.log("✅ Connected to PostgreSQL"))
-  .catch((err: any) => console.error("❌ Database connection error:", err));
 
 // Health check route
 app.get("/health", async (req, res) => {
@@ -67,18 +65,8 @@ app.use("/api/audit", isAuthenticated, isLender, auditRoutes);
 app.use("/api/analytics", isAuthenticated, analyticsRoutes);
 app.use("/api/notifications", isAuthenticated, notificationRoutes);
 
-// Error handling middleware
-app.use(
-  (
-    err: any,
-    req: express.Request,
-    res: express.Response,
-    next: express.NextFunction
-  ) => {
-    console.error(err.stack);
-    res.status(500).json({ error: "Something went wrong!" });
-  }
-);
+// Use the global error handling middleware
+app.use(errorHandler); // Add the error handler after all routes
 
 scheduleTokenCleanup(60);
 
