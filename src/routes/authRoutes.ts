@@ -286,18 +286,43 @@ router.post(
       const refresh_token = req.cookies[REFRESH_TOKEN_COOKIE_NAME];
 
       if (refresh_token) {
-        await revokeRefreshToken(refresh_token);
+        // Verify the refresh token is valid before revoking
+        const storedToken = await findRefreshToken(refresh_token);
+        
+        if (storedToken) {
+          // Check if the token belongs to the authenticated user
+          if (storedToken.userId !== req.user!.walletAddress) {
+            // Token mismatch - potential security issue
+            await handleTokenReuse(refresh_token);
+            res.clearCookie(REFRESH_TOKEN_COOKIE_NAME);
+            res.status(403).json({ error: "Token mismatch - security violation" });
+            return;
+          }
+
+          // Revoke the specific refresh token
+          await revokeRefreshToken(refresh_token);
+        }
       }
 
-      // Clear the refresh token cookie
-      res.clearCookie(REFRESH_TOKEN_COOKIE_NAME);
+      // Clear the refresh token cookie with secure options
+      res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, {
+        ...COOKIE_CONFIG,
+        maxAge: 0, // Immediately expire the cookie
+        path: '/', // Ensure cookie is cleared from all paths
+      });
 
-      // Optionally revoke all refresh tokens for the user
+      // Revoke all refresh tokens for the user
       await revokeAllUserRefreshTokens(req.user!.walletAddress);
-      res.json({ message: "Successfully logged out" });
+
+      res.json({ 
+        message: "Successfully logged out",
+        details: "All sessions have been terminated"
+      });
     } catch (error) {
       console.error("Logout error:", error);
-      res.status(500).json({ error: "Internal server error" });
+      // Even if there's an error, try to clear the cookie
+      res.clearCookie(REFRESH_TOKEN_COOKIE_NAME);
+      res.status(500).json({ error: "Internal server error during logout" });
     }
   }
 );
