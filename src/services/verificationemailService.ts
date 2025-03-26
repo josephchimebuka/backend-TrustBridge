@@ -1,20 +1,20 @@
-const nodemailer = require('nodemailer');
-const dbConfig = require('../config/db');
+import nodemailer from 'nodemailer';
+import database from '../config/db'; // Adjusted import to use the unified database object
 
 const transporter = nodemailer.createTransport({
-  service: dbConfig.EMAIL_SERVICE,
+  service: database.config.EMAIL_SERVICE,
   auth: {
-    user: dbConfig.EMAIL_USER,
-    pass: dbConfig.EMAIL_PASSWORD
+    user: database.config.EMAIL_USER,
+    pass: database.config.EMAIL_PASSWORD
   }
 });
 
 // Explicitly define parameter types
 const sendVerificationEmail = async (email: string, token: string): Promise<void> => {
-  const verificationLink = `${dbConfig.BASE_URL}/verify-email?token=${token}`;
+  const verificationLink = `${database.config.BASE_URL}/verify-email?token=${token}`;
   
   const mailOptions = {
-    from: dbConfig.EMAIL_USER,
+    from: database.config.EMAIL_USER,
     to: email,
     subject: 'Email Verification',
     html: `
@@ -28,6 +28,6 @@ const sendVerificationEmail = async (email: string, token: string): Promise<void
   await transporter.sendMail(mailOptions);
 };
 
-module.exports = {
+export default {
   sendVerificationEmail
 };
