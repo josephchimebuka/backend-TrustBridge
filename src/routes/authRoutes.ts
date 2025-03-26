@@ -12,9 +12,6 @@ import {
   generateAccessToken,
   generateRefreshToken,
   verifyRefreshToken,
-  REFRESH_TOKEN_COOKIE_NAME,
-  COOKIE_CONFIG,
-  ALLOWED_REFRESH_ORIGINS,
 } from "../utils/jwt";
 import {
   createRefreshToken,
@@ -31,6 +28,7 @@ import {
 import { v4 as uuidv4 } from "uuid";
 import errorHandler from '../middleware/errorHandler'; // Import the global error handler
 import { validateRegister, validateVerifyEmail, checkValidationResult } from '../middleware/validation'; // Import validation middleware
+import { COOKIE_CONFIG, REFRESH_TOKEN_COOKIE_NAME, ALLOWED_REFRESH_ORIGINS } from '../middleware/config'; // Import centralized config
 
 const router: Router = express.Router();
 
