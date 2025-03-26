@@ -1,9 +1,10 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 
 const errorHandler = (
   err: Error & { status?: number }, // Extend Error to include status
   req: Request,
   res: Response,
+  next: NextFunction
 ): void => {
   console.error(err.stack); // Log the error details
 
