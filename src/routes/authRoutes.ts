@@ -1,7 +1,7 @@
 import express, { Request, Response, NextFunction, Router } from 'express';
 import passport from 'passport';
-const authController = require('../controllers/authController');
-import { isAuthenticated, authenticateUser,forgotPassword, resetPassword } from '../middleware/auth';
+import authController from '../controllers/authController';
+import { isAuthenticated, authenticateUser, forgotPassword, resetPassword } from '../middleware/auth';
 import expressAsyncHandler from 'express-async-handler';
 import {
   findUserByWalletAddress,
@@ -29,8 +29,7 @@ import {
   DeviceInfo,
 } from "../models/refreshToken";
 import { v4 as uuidv4 } from "uuid";
-
-
+import errorHandler from '../middleware/errorHandler'; // Import the global error handler
 
 const router: Router = express.Router();
 
@@ -95,7 +94,7 @@ router.get(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { walletAddress } = req.params;
-      let user = findUserByWalletAddress(walletAddress);
+      let user = await findUserByWalletAddress(walletAddress);
 
       if (!user) {
         user = await createUser(walletAddress);
@@ -105,7 +104,7 @@ router.get(
 
       res.json({ nonce: user.nonce });
     } catch (error) {
-      res.status(500).json({ error: "Failed to generate nonce" });
+      next(error); // Pass the error to the global error handler
     }
   }
 );
@@ -114,7 +113,7 @@ router.get(
 router.post(
   "/login",
   authenticateUser,
-  async (req: Request, res: Response): Promise<void> => {
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const user = req.user as { walletAddress: string };
       const deviceInfo = getDeviceInfo(req);
@@ -123,17 +122,17 @@ router.post(
       // Generate tokens
       const accessToken = generateAccessToken({
         walletAddress: user.walletAddress,
-      } as any);
+      });
       const refreshToken = generateRefreshToken(
         {
           walletAddress: user.walletAddress,
-        } as any,
+        },
         origin
       );
 
       // Store refresh token with a new family (brand new login) and device info
       await createRefreshToken(
-        { walletAddress: user.walletAddress } as any,
+        { walletAddress: user.walletAddress },
         refreshToken,
         deviceInfo
       );
@@ -149,13 +148,13 @@ router.post(
         deviceId: deviceInfo.deviceId,
       });
     } catch (error) {
-      res.status(500).json({ error: "Authentication failed" });
+      next(error); // Pass the error to the global error handler
     }
   }
 );
 
 // Refresh token endpoint
-router.post("/refresh", async (req: Request, res: Response): Promise<void> => {
+router.post("/refresh", async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     // Validate the request has a valid origin
     if (!validateOrigin(req)) {
@@ -181,10 +180,9 @@ router.post("/refresh", async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // Check for token reuse - this is a potential attack
+    // Check for token reuse
     const isReused = await detectTokenReuse(refresh_token);
     if (isReused) {
-      // Handle token reuse by revoking all related tokens
       await handleTokenReuse(refresh_token);
       res.clearCookie(REFRESH_TOKEN_COOKIE_NAME);
       res.status(401).json({ error: "Token reuse detected - session revoked" });
@@ -194,13 +192,12 @@ router.post("/refresh", async (req: Request, res: Response): Promise<void> => {
     // Verify the refresh token
     const storedToken = await findRefreshToken(refresh_token);
     if (!storedToken) {
-      // Clear the invalid cookie
       res.clearCookie(REFRESH_TOKEN_COOKIE_NAME);
       res.status(401).json({ error: "Invalid refresh token" });
       return;
     }
 
-    // Add expiration check
+    // Check expiration
     if (storedToken.expiresAt < new Date()) {
       await revokeRefreshToken(refresh_token);
       res.clearCookie(REFRESH_TOKEN_COOKIE_NAME);
@@ -211,32 +208,28 @@ router.post("/refresh", async (req: Request, res: Response): Promise<void> => {
     // Verify the JWT refresh token
     const payload = verifyRefreshToken(refresh_token);
     if (payload.type !== "refresh") {
-      // Clear the invalid cookie
       res.clearCookie(REFRESH_TOKEN_COOKIE_NAME);
       res.status(401).json({ error: "Invalid token type" });
       return;
     }
 
-    // Validate that the token is being used from the same origin it was issued from
+    // Validate the token's origin
     const currentOrigin = getOrigin(req);
     if (
       payload.origin &&
       payload.origin !== currentOrigin &&
       ALLOWED_REFRESH_ORIGINS.length > 0
     ) {
-      // Origin mismatch - potential CSRF attack
-      await handleTokenReuse(refresh_token); // Revoke all tokens in this family
+      await handleTokenReuse(refresh_token);
       res.clearCookie(REFRESH_TOKEN_COOKIE_NAME);
-      res
-        .status(403)
-        .json({ error: "Origin mismatch - possible CSRF attempt" });
+      res.status(403).json({ error: "Origin mismatch - possible CSRF attempt" });
       return;
     }
 
     // Get the token family for rotation
     const tokenFamily = await getTokenFamily(refresh_token);
 
-    // Extract device info from the stored token and update with current request
+    // Extract and update device info
     const deviceInfo: DeviceInfo = {
       device: storedToken.device,
       deviceId: storedToken.deviceId,
@@ -246,12 +239,12 @@ router.post("/refresh", async (req: Request, res: Response): Promise<void> => {
 
     // Generate new tokens
     const user = { walletAddress: payload.walletAddress };
-    const accessToken = generateAccessToken(user as any);
-    const newRefreshToken = generateRefreshToken(user as any, currentOrigin);
+    const accessToken = generateAccessToken(user);
+    const newRefreshToken = generateRefreshToken(user, currentOrigin);
 
-    // Implement token rotation - create new token in the same family and mark old one as replaced
+    // Implement token rotation
     await createRefreshToken(
-      user as any,
+      user,
       newRefreshToken,
       deviceInfo,
       tokenFamily || undefined,
@@ -262,19 +255,10 @@ router.post("/refresh", async (req: Request, res: Response): Promise<void> => {
     res.cookie(REFRESH_TOKEN_COOKIE_NAME, newRefreshToken, COOKIE_CONFIG);
 
     // Only return the access token in the response body
-    res.json({
-      accessToken,
-    });
+    res.json({ accessToken });
   } catch (error) {
-    // Clear the cookie on error
     res.clearCookie(REFRESH_TOKEN_COOKIE_NAME);
-
-    if (error instanceof Error && error.name === "JsonWebTokenError") {
-      res.status(401).json({ error: "Invalid refresh token" });
-      return;
-    }
-    console.error("Refresh token error:", error);
-    res.status(500).json({ error: "Internal server error" });
+    next(error); // Pass the error to the global error handler
   }
 });
 
@@ -282,24 +266,19 @@ router.post("/refresh", async (req: Request, res: Response): Promise<void> => {
 router.post(
   "/logout",
   isAuthenticated,
-  async (req: Request, res: Response): Promise<void> => {
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      // Get refresh token from cookie instead of request body
       const refresh_token = req.cookies[REFRESH_TOKEN_COOKIE_NAME];
 
       if (refresh_token) {
         await revokeRefreshToken(refresh_token);
       }
 
-      // Clear the refresh token cookie
       res.clearCookie(REFRESH_TOKEN_COOKIE_NAME);
-
-      // Optionally revoke all refresh tokens for the user
       await revokeAllUserRefreshTokens(req.user!.walletAddress);
       res.json({ message: "Successfully logged out" });
     } catch (error) {
-      console.error("Logout error:", error);
-      res.status(500).json({ error: "Internal server error" });
+      next(error); // Pass the error to the global error handler
     }
   }
 );
@@ -308,7 +287,7 @@ router.post(
 router.post(
   "/logout/device/:deviceId",
   isAuthenticated,
-  async (req: Request, res: Response): Promise<void> => {
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { deviceId } = req.params;
 
@@ -317,10 +296,8 @@ router.post(
         return;
       }
 
-      // Revoke all tokens for this device
       await revokeDeviceRefreshTokens(req.user!.walletAddress, deviceId);
 
-      // Check if current device is being logged out
       const current_token = req.cookies[REFRESH_TOKEN_COOKIE_NAME];
       if (current_token) {
         const tokenData = await findRefreshToken(current_token);
@@ -331,8 +308,7 @@ router.post(
 
       res.json({ message: "Successfully logged out from device" });
     } catch (error) {
-      console.error("Device logout error:", error);
-      res.status(500).json({ error: "Internal server error" });
+      next(error); // Pass the error to the global error handler
     }
   }
 );
@@ -341,13 +317,12 @@ router.post(
 router.get(
   "/devices",
   isAuthenticated,
-  async (req: Request, res: Response): Promise<void> => {
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const devices = await getUserActiveDevices(req.user!.walletAddress);
       res.json({ devices });
     } catch (error) {
-      console.error("Get devices error:", error);
-      res.status(500).json({ error: "Internal server error" });
+      next(error); // Pass the error to the global error handler
     }
   }
 );
@@ -361,36 +336,31 @@ router.get("/me", (req: Request, res: Response, next: NextFunction): void => {
     }
     res.json({ user: req.user });
   } catch (error) {
-    next(error);
+    next(error); // Pass the error to the global error handler
   }
 });
 
 // Error handling middleware
-router.use(
-  (err: any, req: Request, res: Response, next: NextFunction): void => {
-    console.error("Auth error:", err);
-    if (err.name === "AuthenticationError") {
-      res.status(401).json({ error: err.message });
-      return;
-    }
-    next(err);
+router.use((err: any, req: Request, res: Response, next: NextFunction): void => {
+  console.error("Auth error:", err);
+  if (err.name === "AuthenticationError") {
+    res.status(401).json({ error: err.message });
+    return;
   }
-);
+  next(err); // Pass to global error handler if not handled here
+});
 
-
+// Routes for password management
 router.post('/forgot-password', expressAsyncHandler(forgotPassword));
 router.post('/reset-password', expressAsyncHandler(resetPassword));
 
-export default router; 
-
 // Route to send verification email
-router.post('/send-verification-email', authController.sendVerificationEmail);
-
+router.post('/send-verification-email', expressAsyncHandler(authController.sendVerificationEmail));
 
 // Route to verify email with token
-router.post('/verify-email', authController.verifyEmail);
+router.post('/verify-email', expressAsyncHandler(authController.verifyEmail));
 
-// routes/authRoutes.js (add this route)
-router.post('/register', authController.register);
+// Route to register a new user
+router.post('/register', expressAsyncHandler(authController.register));
 
-export default router; 
+export default router;
