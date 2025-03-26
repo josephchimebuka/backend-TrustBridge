@@ -5,7 +5,7 @@ dotenv.config();
 
 const pgp = pgPromise();
 
-const dbConfig = pgp({
+const dbConfig = {
   host: process.env.DB_HOST,
   port: Number(process.env.DB_PORT) || 5432,
   database: process.env.DB_NAME,
@@ -17,7 +17,9 @@ const dbConfig = pgp({
         ca: process.env.DB_CA_CERT || undefined 
       }
     : false,
-});
+};
+
+const db = pgp(dbConfig);
 
 const MIN_TOKEN_EXPIRY = 15 * 60 * 1000; 
 const MAX_TOKEN_EXPIRY = 30 * 60 * 1000; 
@@ -35,4 +37,12 @@ const config = {
   BASE_URL: process.env.BASE_URL || 'http://localhost:3000',
 };
 
+// Combine db and config into a single export
+const database = {
+  db,
+  config,
+};
+
+// Export the unified database object
+export default database;
 export { dbConfig, config };
