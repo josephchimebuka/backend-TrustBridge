@@ -34,6 +34,8 @@ model User {
   recommendations Recommendation[]
   auditLogs   AuditLog[]  
   notifications Notification[] 
+  isEmailVerified Boolean   @default(false)
+  tokens          Token[]
   resetToken  String?
   walletAddress String         @unique
   nonce        String
@@ -132,10 +134,16 @@ model Notification {
   user        User     @relation(fields: [userId], references: [id])
 }
 
+enum TokenType {
+  VERIFICATION
+  RESET
+}
+
 model RefreshToken {
   id              String   @id @default(uuid())
   token           String   @unique
-  userId          String
+  userId        type      TokenType   String
+  type      TokenType
   user            User     @relation(fields: [userId], references: [id])
   expiresAt       DateTime
   createdAt       DateTime @default(now())

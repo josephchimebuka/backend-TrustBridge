@@ -14,7 +14,9 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:unit": "jest tests/unit",
-    "test:integration": "jest tests/integration"
+    "test:integration": "jest tests/integration",
+    "migrate": "prisma migrate dev",
+    "studio": "prisma studio"
   },
   "repository": {
     "type": "git",
@@ -62,6 +64,7 @@
     "express": "^4.21.2",
     "express-async-handler": "^1.2.0",
     "express-session": "^1.18.1",
+    "express-validator": "^7.2.1",
     "jsonwebtoken": "^9.0.2",
     "nodemailer": "^6.10.0",
     "passport": "^0.7.0",
