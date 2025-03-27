@@ -3,29 +3,12 @@ import bcrypt from 'bcryptjs';
 import { GraphQLError } from 'graphql';
 import { generateToken } from "../middleware/auth.middleware";
 import crypto from 'crypto';
+import {Context, CreateUserInput, UpdateUserInput} from "../../models/user";
+import {Validator} from "../../utils/input-validation-util";
 
 const prisma = new PrismaClient();
 
-interface Context {
-    user?: {
-        id: string;
-        email: string;
-    }
-}
 
-interface CreateUserInput {
-    name: string;
-    email: string;
-    password: string;
-    walletAddress: string;
-    roleIds: string[];
-}
-
-interface UpdateUserInput {
-    name?: string;
-    email?: string;
-    walletAddress?: string;
-}
 
 export const userResolvers = {
     Query: {
@@ -67,33 +50,66 @@ export const userResolvers = {
         }
     },
     Mutation: {
+
         registerUser: async (_parent: unknown, { input }: { input: CreateUserInput }) => {
+            // Validate input first
+            Validator.validateUserInput(input);
+
             const { name, email, password, walletAddress, roleIds } = input;
 
             // Check if user already exists
-            const existingUser = await prisma.user.findUnique({ where: { email } });
+            const existingUser = await prisma.user.findFirst({
+                where: {
+                    OR: [
+                        { email },
+                        { walletAddress }
+                    ]
+                }
+            });
+
             if (existingUser) {
-                throw new GraphQLError('User already exists');
+                if (existingUser.email === email) {
+                    throw new GraphQLError('User with this email already exists');
+                }
+                if (existingUser.walletAddress === walletAddress) {
+                    throw new GraphQLError('Wallet address is already in use');
+                }
             }
+
+            // Ensure a default USER role exists
+            let defaultUserRole = await prisma.role.findUnique({
+                where: { name: 'USER' }
+            });
+
+            if (!defaultUserRole) {
+                defaultUserRole = await prisma.role.create({
+                    data: {
+                        name: 'USER'
+                    }
+                });
+            }
+
+            // Determine final role IDs
+            let finalRoleIds: string[] = roleIds.length > 0
+                ? roleIds
+                : [defaultUserRole.id];
 
             // Validate and fetch roles
             const roles = await prisma.role.findMany({
                 where: {
-                    id: { in: roleIds },
-                    // If no specific IDs are provided, default to 'USER' role
-                    OR: roleIds.length === 0 ? [{ name: 'USER' }] : undefined
+                    id: { in: finalRoleIds }
                 }
             });
 
-            // If no valid roles found, throw an error
+            // If no valid roles found, use the default USER role
             if (roles.length === 0) {
-                throw new GraphQLError('Invalid or no roles provided');
+                roles.push(defaultUserRole);
             }
 
             // Hash password
             const hashedPassword = await bcrypt.hash(password, 10);
 
-            // Generate a nonce (a random string used for additional security)
+            // Generate a nonce
             const nonce = crypto.randomBytes(16).toString('hex');
 
             // Create user with roles
@@ -103,10 +119,10 @@ export const userResolvers = {
                     email,
                     password: hashedPassword,
                     walletAddress,
-                    nonce, // Add the required nonce
+                    nonce,
                     roles: {
-                        create: roleIds.map((roleId) => ({
-                            role: { connect: { id: roleId } }
+                        create: roles.map((role) => ({
+                            role: { connect: { id: role.id } }
                         }))
                     }
                 },
@@ -123,6 +139,8 @@ export const userResolvers = {
 
             return { user, token, refreshToken };
         },
+
+
         loginUser: async (_parent: unknown, { email, password }: { email: string, password: string }) => {
             const user = await prisma.user.findUnique({
                 where: { email },
