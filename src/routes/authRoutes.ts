@@ -7,9 +7,6 @@ import {
   createUser,
   updateUserNonce,
 } from "../models/user";
-import AuthController from "../../src/controllers/authController";
-import authService from "../../src/services/authService";
-import { RefreshTokenDto } from "../../src/dtos/auth.dto";
 import {
   generateAccessToken,
   generateRefreshToken,
@@ -31,7 +28,6 @@ import {
   DeviceInfo,
 } from "../models/refreshToken";
 import { v4 as uuidv4 } from "uuid";
-import { loginRateLimiter } from "../../src/utils/ratelimiter";
 
 
 const router: Router = express.Router();
@@ -290,18 +286,43 @@ router.post(
       const refresh_token = req.cookies[REFRESH_TOKEN_COOKIE_NAME];
 
       if (refresh_token) {
-        await revokeRefreshToken(refresh_token);
+        // Verify the refresh token is valid before revoking
+        const storedToken = await findRefreshToken(refresh_token);
+        
+        if (storedToken) {
+          // Check if the token belongs to the authenticated user
+          if (storedToken.userId !== req.user!.walletAddress) {
+            // Token mismatch - potential security issue
+            await handleTokenReuse(refresh_token);
+            res.clearCookie(REFRESH_TOKEN_COOKIE_NAME);
+            res.status(403).json({ error: "Token mismatch - security violation" });
+            return;
+          }
+
+          // Revoke the specific refresh token
+          await revokeRefreshToken(refresh_token);
+        }
       }
 
-      // Clear the refresh token cookie
-      res.clearCookie(REFRESH_TOKEN_COOKIE_NAME);
+      // Clear the refresh token cookie with secure options
+      res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, {
+        ...COOKIE_CONFIG,
+        maxAge: 0, // Immediately expire the cookie
+        path: '/', // Ensure cookie is cleared from all paths
+      });
 
-      // Optionally revoke all refresh tokens for the user
+      // Revoke all refresh tokens for the user
       await revokeAllUserRefreshTokens(req.user!.walletAddress);
-      res.json({ message: "Successfully logged out" });
+
+      res.json({ 
+        message: "Successfully logged out",
+        details: "All sessions have been terminated"
+      });
     } catch (error) {
       console.error("Logout error:", error);
-      res.status(500).json({ error: "Internal server error" });
+      // Even if there's an error, try to clear the cookie
+      res.clearCookie(REFRESH_TOKEN_COOKIE_NAME);
+      res.status(500).json({ error: "Internal server error during logout" });
     }
   }
 );
@@ -379,31 +400,6 @@ router.use(
   }
 );
 
-// Register a new user
-router.post("/register", AuthController.register);
-
-// Login user
-// router.post("/login-web2", AuthController.login);
-router.post("/login-web2", loginRateLimiter, AuthController.login);
-
-// router.post("/refresh-token", AuthController.refreshToken);
-
-router.post(
-  "/refresh-token",
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-    const dto: RefreshTokenDto = req.body;
-      
-     const token = authService.refreshToken(dto);
-
-      res.status(201).json({message: 'Token generated', token: (await token).tokens});
-      res.json();
-    } catch (error) {
-      next(error)
-      res.status(500).json();
-    }
-  }
-);
 
 router.post('/forgot-password', expressAsyncHandler(forgotPassword));
 router.post('/reset-password', expressAsyncHandler(resetPassword));
