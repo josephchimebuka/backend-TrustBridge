@@ -13,7 +13,7 @@ import { isAuthenticated, isLender } from './middleware/auth';
 import cookieParser from "cookie-parser";
 import { scheduleTokenCleanup } from './services/tokenCleanup';
 import errorHandler from './middleware/errorHandler'; // Import the error handler
-import database from './database/db
+import database from './config/db';
 
 dotenv.config();
 const app = express();
@@ -64,8 +64,23 @@ app.use("/api/audit", isAuthenticated, isLender, auditRoutes);
 app.use("/api/analytics", isAuthenticated, analyticsRoutes);
 app.use("/api/notifications", isAuthenticated, notificationRoutes);
 
-// Use the global error handling middleware
-app.use(errorHandler); // Add the error handler after all routes
+
+// Start Token Cleanup Service (Runs Every Minute)
+// ScheduleModule.forRoot();
+// tokenCleanupService.cleanExpiredTokens();
+
+// Error handling middleware
+app.use(
+  (
+    err: any,
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction
+  ) => {
+    console.error(err.stack);
+    res.status(500).json({ error: "Something went wrong!" });
+  }
+);
 
 scheduleTokenCleanup(60);
 

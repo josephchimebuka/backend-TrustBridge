@@ -113,26 +113,47 @@ export const userResolvers = {
             const nonce = crypto.randomBytes(16).toString('hex');
 
             // Create user with roles
+            // const user = await prisma.user.create({
+            //     data: {
+            //         name,
+            //         email,
+            //         password: hashedPassword,
+            //         walletAddress,
+            //         nonce,
+            //         roles: {
+            //             create: roles.map((role) => ({
+            //                 role: { connect: { id: role.id } }
+            //             }))
+            //         }
+            //     },
+            //     include: {
+            //         roles: {
+            //             include: { role: true }
+            //         }
+            //     }
+            // });
+            
             const user = await prisma.user.create({
                 data: {
-                    name,
-                    email,
-                    password: hashedPassword,
-                    walletAddress,
-                    nonce,
-                    roles: {
-                        create: roles.map((role) => ({
-                            role: { connect: { id: role.id } }
-                        }))
-                    }
+                  name,
+                  email,
+                  password: hashedPassword,
+                  walletAddress,
+                  nonce,
+                  lastLogin: new Date(), // Explicitly setting lastLogin
+                  roles: {
+                    create: roles.map((role) => ({
+                      role: { connect: { id: role.id } },
+                    })),
+                  },
                 },
                 include: {
-                    roles: {
-                        include: { role: true }
-                    }
-                }
-            });
-
+                  roles: {
+                    include: { role: true },
+                  },
+                },
+              });
+              
             // Generate tokens
             const token = generateToken(user);
             const refreshToken = generateToken(user, true);

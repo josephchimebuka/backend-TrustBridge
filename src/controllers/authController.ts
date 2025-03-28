@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-const prisma = require('../prisma/client');
+import prisma from '../../src/config/prisma';
 const tokenUtils = require('../utils/tokenUtils');
 const emailService = require('../services/emailService');
 const bcrypt = require('bcrypt');
@@ -28,10 +28,10 @@ const sendVerificationEmail = async (req: Request, res: Response) => {
     }
 
     // Delete any existing verification tokens
-    await prisma.token.deleteMany({
+    await prisma.refreshToken.deleteMany({
       where: {
         userId: user.id,
-        type: 'verification',
+        type: 'REFRESH',
       },
     });
 
@@ -72,11 +72,11 @@ const verifyEmail = async (req: Request, res: Response) => {
     }
 
     // Delete the used token
-    await prisma.token.deleteMany({
+    await prisma.refreshToken.deleteMany({
       where: {
         userId,
         token,
-        type: 'verification',
+        type: 'REFRESH',
       },
     });
 
@@ -116,6 +116,9 @@ const register = async (req: Request, res: Response) => {
         email,
         password: hashedPassword,
         isEmailVerified: false,
+        name: '',
+        nonce: '',
+        walletAddress: ''
       },
     });
 
@@ -132,11 +135,14 @@ const register = async (req: Request, res: Response) => {
     console.error('Error registering user:', err);
     return res.status(500).json({ message: 'Internal server error' });
   }
+
+
+  
 };
 
+
 // Export the functions
-module.exports = {
-  register,
-  sendVerificationEmail,
-  verifyEmail,
-};
+export { register, sendVerificationEmail, verifyEmail };
+      
+
+

@@ -51,7 +51,8 @@ model User {
   updatedAt       DateTime         @updatedAt
   creditScore     CreditScore?
   isEmailVerified Boolean   @default(false)
-  tokens          Token[]
+  otpCodes        OtpCode[] @relation("UserOtpCodes")
+
 }
 
 model RoleUser {
@@ -143,15 +144,10 @@ model Notification {
   user      User             @relation(fields: [userId], references: [id])
 }
 
-enum TokenType {
-  VERIFICATION
-  RESET
-}
-
 model RefreshToken {
   id              String   @id @default(uuid())
   token           String   @unique
-  userId        type      TokenType   String
+  userId          String
   type      TokenType
   user            User     @relation(fields: [userId], references: [id])
   expiresAt       DateTime
@@ -163,4 +159,24 @@ model RefreshToken {
   deviceId        String?
   userAgent       String?
   ipAddress       String?
+}
+
+model OtpCode {
+  id         String   @id @default(uuid())
+  user       User     @relation("UserOtpCodes", fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  code       String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+}
+
+enum TokenType {
+  ACCESS
+  REFRESH
+}
+
+model RevokedToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  createdAt DateTime @default(now())
 }

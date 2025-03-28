@@ -1,16 +1,19 @@
 import express, { Request, Response, NextFunction, Router } from 'express';
 import passport from 'passport';
-import authController from '../controllers/authController';
-import { isAuthenticated, authenticateUser, forgotPassword, resetPassword } from '../middleware/auth';
+import { isAuthenticated, authenticateUser,forgotPassword, resetPassword } from '../middleware/auth';
 import expressAsyncHandler from 'express-async-handler';
 import {
   findUserByWalletAddress,
   createUser,
   updateUserNonce,
+  User,
 } from "../models/user";
 import {
+  ALLOWED_REFRESH_ORIGINS,
+  COOKIE_CONFIG,
   generateAccessToken,
   generateRefreshToken,
+  REFRESH_TOKEN_COOKIE_NAME,
   verifyRefreshToken,
 } from "../utils/jwt";
 import {
@@ -27,8 +30,10 @@ import {
 } from "../models/refreshToken";
 import { v4 as uuidv4 } from "uuid";
 import errorHandler from '../middleware/errorHandler';
-import { validateRegister, validateVerifyEmail, checkValidationResult } from '../middleware/validation';
-import { COOKIE_CONFIG, REFRESH_TOKEN_COOKIE_NAME, ALLOWED_REFRESH_ORIGINS } from '../middleware/config';
+import { sendVerificationEmail}  from '../../src/controllers/authController';
+import { verifyEmail } from '../../src/controllers/authController';
+import { register } from '../../src/controllers/authController';
+import { validateVerifyEmail, checkValidationResult, validateRegister } from '../../src/middleware/validation';
 
 const router: Router = express.Router();
 
@@ -89,9 +94,21 @@ router.post("/login", authenticateUser, async (req: Request, res: Response, next
     const user = req.user as { walletAddress: string };
     const deviceInfo = getDeviceInfo(req);
     const origin = getOrigin(req);
-    const accessToken = generateAccessToken({ walletAddress: user.walletAddress });
-    const refreshToken = generateRefreshToken({ walletAddress: user.walletAddress }, origin);
-    await createRefreshToken({ walletAddress: user.walletAddress }, refreshToken, deviceInfo);
+    const accessToken = generateAccessToken({
+      walletAddress: user.walletAddress,
+      nonce: '',
+      createdAt: new Date
+    });
+    const refreshToken = generateRefreshToken({
+      walletAddress: user.walletAddress,
+      nonce: '',
+      createdAt: new Date
+    }, origin);
+    await createRefreshToken({
+      walletAddress: user.walletAddress,
+      nonce: '',
+      createdAt: new Date
+    }, refreshToken, deviceInfo);
     res.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, COOKIE_CONFIG);
     res.json({
       message: "Successfully authenticated",
@@ -144,9 +161,9 @@ router.post("/refresh", async (req: Request, res: Response, next: NextFunction) 
       ipAddress: getClientIp(req),
     };
     const user = { walletAddress: payload.walletAddress };
-    const accessToken = generateAccessToken(user);
-    const newRefreshToken = generateRefreshToken(user, currentOrigin);
-    await createRefreshToken(user, newRefreshToken, deviceInfo, tokenFamily || undefined, refresh_token);
+    const accessToken = generateAccessToken(user as User);
+    const newRefreshToken = generateRefreshToken(user as User, currentOrigin);
+    await createRefreshToken(user as User, newRefreshToken, deviceInfo, tokenFamily || undefined, refresh_token);
     res.cookie(REFRESH_TOKEN_COOKIE_NAME, newRefreshToken, COOKIE_CONFIG);
     res.json({ accessToken });
   } catch (error) {
@@ -157,9 +174,9 @@ router.post("/refresh", async (req: Request, res: Response, next: NextFunction) 
 
 router.post("/forgot-password", expressAsyncHandler(forgotPassword));
 router.post("/reset-password", expressAsyncHandler(resetPassword));
-router.post("/send-verification-email", expressAsyncHandler(authController.sendVerificationEmail));
-router.post("/verify-email", validateVerifyEmail, checkValidationResult, expressAsyncHandler(authController.verifyEmail));
-router.post("/register", validateRegister, checkValidationResult, expressAsyncHandler(authController.register));
+router.post("/send-verification-email", expressAsyncHandler(sendVerificationEmail));
+router.post("/verify-email", validateVerifyEmail, checkValidationResult, expressAsyncHandler(verifyEmail));
+router.post("/register", validateRegister, checkValidationResult, expressAsyncHandler(register));
 
 router.use(errorHandler);
 

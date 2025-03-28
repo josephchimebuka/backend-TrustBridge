@@ -1,4 +1,4 @@
-const crypto = require('crypto');
+const nodeCrypto = require('crypto'); // Rename to avoid conflict
 const prisma = require('../prisma/client');
 const config = require('../config/config');
 
@@ -7,8 +7,8 @@ const config = require('../config/config');
  * @param {string} userId - User ID
  * @returns {Promise<string>} Generated token
  */
-const generateVerificationToken = async (userId) => {
-  const token = crypto.randomBytes(32).toString('hex');
+const generateVerificationToken = async (userId:string) => {
+  const token = nodeCrypto.randomBytes(32).toString('hex'); // Use nodeCrypto instead of crypto
   
   // Create a new token with revoked field set to false by default
   await prisma.token.create({
@@ -30,7 +30,7 @@ const generateVerificationToken = async (userId) => {
  * @returns {Promise<string>} User ID if token is valid
  * @throws {Error} If token is invalid, expired or revoked
  */
-const verifyToken = async (token) => {
+const verifyToken = async (token: string) => {
   const tokenRecord = await prisma.token.findUnique({
     where: { token }
   });
@@ -60,7 +60,7 @@ const verifyToken = async (token) => {
  * @param {string} token - Token to revoke
  * @returns {Promise<boolean>} True if token was revoked
  */
-const revokeToken = async (token) => {
+const revokeToken = async (token: string) => {
   try {
     await prisma.token.update({
       where: { token },
@@ -68,7 +68,7 @@ const revokeToken = async (token) => {
     });
     return true;
   } catch (error) {
-    console.error('Error revoking token:', error.message);
+    console.error('Error revoking token:', error);
     return false;
   }
 };
@@ -79,15 +79,18 @@ const revokeToken = async (token) => {
  * @param {string} [type] - Optional token type
  * @returns {Promise<number>} Number of tokens revoked
  */
-const revokeUserTokens = async (userId, type = null) => {
-  const where = { userId, revoked: false };
-  if (type) where.type = type;
-  
+const revokeUserTokens = async (userId: string, type?: string): Promise<number> => {
+  const where: { userId: string; revoked: boolean; type?: string } = {
+    userId,
+    revoked: false,
+    ...(type && { type }) // Conditionally add 'type' only if it's provided
+  };
+
   const result = await prisma.token.updateMany({
     where,
     data: { revoked: true }
   });
-  
+
   return result.count;
 };
 
