@@ -84,6 +84,28 @@ Apply the database migrations to set up the necessary tables and schema:
 npm run migrate
 ```
 
+#### 4.4 Initialize Prisma
+Run the following command to initialize Prisma in your project:
+```bash
+npx prisma init
+```
+#### 4.5 Run Migrations
+
+Apply the initial database schema to your database:
+
+```bash
+npx prisma migrate dev --name init
+```
+
+#### 4.6 Generate Prisma Client
+
+Generate the Prisma Client to interact with your database:
+
+```bash
+npx prisma generate
+```
+
+
 ### 5. Start the Development Server
 
 Start the backend development server using the following command:
