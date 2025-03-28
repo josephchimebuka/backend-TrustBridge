@@ -23,21 +23,21 @@ import {
   getTokenFamily,
   revokeDeviceRefreshTokens,
   getUserActiveDevices,
-  DeviceInfo,
 } from "../models/refreshToken";
 import { v4 as uuidv4 } from "uuid";
 import errorHandler from '../middleware/errorHandler';
 import { validateRegister, validateVerifyEmail, checkValidationResult } from '../middleware/validation';
 import { COOKIE_CONFIG, REFRESH_TOKEN_COOKIE_NAME, ALLOWED_REFRESH_ORIGINS } from '../middleware/config';
+import { IDeviceInfo } from 'src/interfaces';
 
 const router: Router = express.Router();
 
-const getDeviceInfo = (req: Request): DeviceInfo => {
+const getDeviceInfo = (req: Request): IDeviceInfo => {
   return {
     device: detectDeviceType(req.headers["user-agent"] || ""),
     deviceId: req.body.deviceId || uuidv4(),
-    userAgent: req.headers["user-agent"] || null,
-    ipAddress: getClientIp(req),
+    userAgent: req.headers["user-agent"] || "",
+    ipAddress: req.ip,
   };
 };
 
