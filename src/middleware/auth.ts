@@ -171,7 +171,10 @@ export const forgotPassword = async (req: Request, res: Response) => {
     // Store the token in the DB (optional but good for reference)
     await prisma.user.update({
       where: { email },
-      data: { resetToken: token },
+      data: { 
+        resetToken: token 
+
+      },
     });
 
     // Configure email transporter

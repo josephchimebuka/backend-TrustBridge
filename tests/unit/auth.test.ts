@@ -1,7 +1,9 @@
+import prisma from "../../src/config/prisma";
+
 // tests/auth.test.js
 const request = require('supertest');
 const app = require('../app');
-const prisma = require('../prisma/client');
+// const prisma = require('../prisma/client');
 const emailService = require('../services/emailService');
 
 // Mock the email service
@@ -12,22 +14,25 @@ describe('Email Verification', () => {
   
   beforeAll(async () => {
     // Clear test data
-    await prisma.token.deleteMany();
+    await prisma.refreshToken.deleteMany();
     await prisma.user.deleteMany();
     
     // Create a test user
     testUser = await prisma.user.create({
       data: {
-        email: 'test@example.com',
-        password: 'password123',
-        isEmailVerified: false
+        name: "Test User",
+        email: "test@example.com",
+        password: "securepassword",
+        walletAddress: "0x1234567890123456789012345678901234567890",
+        nonce: "123456"
+    
       }
     });
   });
   
   afterAll(async () => {
     // Clean up
-    await prisma.token.deleteMany();
+    await prisma.refreshToken.deleteMany();
     await prisma.user.deleteMany();
     await prisma.$disconnect();
   });
@@ -46,10 +51,10 @@ describe('Email Verification', () => {
       expect(emailService.sendVerificationEmail).toHaveBeenCalled();
       
       // Check if token was created
-      const token = await prisma.token.findFirst({
+      const token = await prisma.refreshToken.findFirst({
         where: { 
           userId: testUser.id,
-          type: 'verification'
+          type: 'REFRESH'
         }
       });
       expect(token).toBeTruthy();
@@ -68,16 +73,16 @@ describe('Email Verification', () => {
   describe('POST /auth/verify-email', () => {
     it('should verify email with valid token', async () => {
       // Get the token
-      const token = await prisma.token.findFirst({
+      const token = await prisma.refreshToken.findFirst({
         where: { 
           userId: testUser.id,
-          type: 'verification'
+          type: 'REFRESH'
         }
       });
       
       const response = await request(app)
         .post('/auth/verify-email')
-        .send({ token: token.token })
+        .send({ token: token?.token })
         .expect(200);
       
       expect(response.body.message).toBe('Email verified successfully');
@@ -86,11 +91,11 @@ describe('Email Verification', () => {
       const updatedUser = await prisma.user.findUnique({
         where: { id: testUser.id }
       });
-      expect(updatedUser.isEmailVerified).toBe(true);
+      expect(updatedUser?.isEmailVerified).toBe(true);
       
       // Check if token was deleted
-      const deletedToken = await prisma.token.findUnique({
-        where: { token: token.token }
+      const deletedToken = await prisma.refreshToken.findUnique({
+        where: { token: token?.token }
       });
       expect(deletedToken).toBeFalsy();
     });

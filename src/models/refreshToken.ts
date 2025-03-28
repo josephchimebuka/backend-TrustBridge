@@ -35,7 +35,7 @@ export const createRefreshToken = async (
   return await prisma.refreshToken.create({
     data: {
       userId: user.walletAddress,
-      token,
+      type: "REFRESH", 
       expiresAt,
       isRevoked: false,
       family,
