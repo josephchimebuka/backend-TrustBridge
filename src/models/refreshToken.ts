@@ -5,7 +5,7 @@ import {
   enforceTokenLimit,
   MAX_ACTIVE_TOKENS_PER_USER,
 } from "./tokenLimit";
-import { IDeviceInfo,IRefreshToken,IAuthUser } from "src/interfaces";
+import { IDeviceInfo,IRefreshToken,IAuthUser } from "../interfaces";
 
 export {
   countActiveRefreshTokens,

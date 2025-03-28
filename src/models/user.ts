@@ -1,4 +1,4 @@
-import { type IUser } from "../interfaces/User";
+import { type IUser } from "../interfaces";
 
 
 // In-memory store for users (replace with database in production)

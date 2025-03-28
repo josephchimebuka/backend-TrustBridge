@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import { User } from "../models/user";
 import { type IJWTPayload } from "../interfaces";
-import { IAuthUser } from "src/interfaces";
+import { IAuthUser } from "../interfaces";
 
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-jwt-secret";

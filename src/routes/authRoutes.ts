@@ -33,7 +33,7 @@ import { sendVerificationEmail}  from '../../src/controllers/authController';
 import { verifyEmail } from '../../src/controllers/authController';
 import { register } from '../../src/controllers/authController';
 import { validateVerifyEmail, checkValidationResult, validateRegister } from '../../src/middleware/validation';
-import { IDeviceInfo } from 'src/interfaces';
+import { IDeviceInfo } from '../interfaces';
 
 const router: Router = express.Router();
 
