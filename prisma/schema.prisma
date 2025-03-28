@@ -22,34 +22,43 @@ model Role {
   permissions RolePermission[]
 }
 
+model CreditScore {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  score       Int
+  lastUpdated DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
+}
+
 model User {
-  id         String   @id @default(uuid())
-  name       String
-  email      String   @unique
-  password    String
-  roles      RoleUser[]
-  loans      Loan[]
-  payments   Payment[]
-  reputation Reputation?
+  id              String           @id @default(uuid())
+  name            String
+  email           String           @unique
+  password        String
+  roles           RoleUser[]
+  loans           Loan[]
+  payments        Payment[]
+  reputation      Reputation?
   recommendations Recommendation[]
-  auditLogs   AuditLog[]  
-  notifications Notification[] 
+  auditLogs       AuditLog[]
+  notifications   Notification[]
+  resetToken      String?
+  walletAddress   String           @unique
+  nonce           String
+  createdAt       DateTime         @default(now())
+  lastLogin       DateTime?
+  refreshToken    RefreshToken[]
+  updatedAt       DateTime         @updatedAt
+  creditScore     CreditScore?
   isEmailVerified Boolean   @default(false)
   tokens          Token[]
-  resetToken  String?
-  walletAddress String         @unique
-  nonce        String
-  createdAt    DateTime       @default(now())
-  lastLogin    DateTime?
-  refreshToken RefreshToken[]
-  updatedAt    DateTime       @updatedAt
 }
 
 model RoleUser {
   userId String
   roleId String
-  user   User   @relation(fields: [userId], references: [id])
-  role   Role   @relation(fields: [roleId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   @@id([userId, roleId])
 }
@@ -125,13 +134,13 @@ enum NotificationType {
 }
 
 model Notification {
-  id          String   @id @default(uuid())
-  userId      String
-  type        NotificationType
-  message     String
-  isRead      Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  user        User     @relation(fields: [userId], references: [id])
+  id        String           @id @default(uuid())
+  userId    String
+  type      NotificationType
+  message   String
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  user      User             @relation(fields: [userId], references: [id])
 }
 
 enum TokenType {
