@@ -22,35 +22,44 @@ model Role {
   permissions RolePermission[]
 }
 
+model CreditScore {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  score       Int
+  lastUpdated DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
+}
+
 model User {
-  id         String   @id @default(uuid())
-  name       String?
-  email      String   @unique
-  password     String
-  roles      RoleUser[]
-  loans      Loan[]
-  payments   Payment[]
-  reputation Reputation?
+  id              String           @id @default(uuid())
+  name            String
+  email           String           @unique
+  password        String
+  roles           RoleUser[]
+  loans           Loan[]
+  payments        Payment[]
+  reputation      Reputation?
   recommendations Recommendation[]
-  auditLogs   AuditLog[]  
-  notifications Notification[] 
-  resetToken  String?
-  walletAddress String?         @unique
-  nonce        String?
-  createdAt    DateTime       @default(now())
-  lastLogin    DateTime?
-  refreshToken RefreshToken[]
-  creditScore CreditScore?
-  tokens  Token[]
-  otpCodes       OtpCode[]     @relation("UserOtpCodes")
-  updatedAt    DateTime       @updatedAt
+  auditLogs       AuditLog[]
+  notifications   Notification[]
+  resetToken      String?
+  walletAddress   String           @unique
+  nonce           String
+  createdAt       DateTime         @default(now())
+  lastLogin       DateTime?
+  refreshToken    RefreshToken[]
+  updatedAt       DateTime         @updatedAt
+  creditScore     CreditScore?
+  isEmailVerified Boolean   @default(false)
+  otpCodes        OtpCode[] @relation("UserOtpCodes")
+
 }
 
 model RoleUser {
   userId String
   roleId String
-  user   User   @relation(fields: [userId], references: [id])
-  role   Role   @relation(fields: [roleId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   @@id([userId, roleId])
 }
@@ -126,27 +135,20 @@ enum NotificationType {
 }
 
 model Notification {
-  id          String   @id @default(uuid())
-  userId      String
-  type        NotificationType
-  message     String
-  isRead      Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  user        User     @relation(fields: [userId], references: [id])
+  id        String           @id @default(uuid())
+  userId    String
+  type      NotificationType
+  message   String
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  user      User             @relation(fields: [userId], references: [id])
 }
 
-  model CreditScore {
-  id    String @id @default(uuid())
-  score Int
-  userId  String @unique
-  user    User   @relation(fields: [userId], references: [id]) 
-  lastUpdated DateTime @updatedAt
-
-}
 model RefreshToken {
   id              String   @id @default(uuid())
   token           String   @unique
   userId          String
+  type      TokenType
   user            User     @relation(fields: [userId], references: [id])
   expiresAt       DateTime
   createdAt       DateTime @default(now())
@@ -168,19 +170,13 @@ model OtpCode {
   createdAt  DateTime @default(now())
 }
 
-model Token {
-  id         String   @id @default(uuid())
-  userId     String
-  token      String   // Store hashed refresh tokens for security
-  expiresIn  DateTime
-  tokenType  TokenType
-
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-}
-
 enum TokenType {
   ACCESS
   REFRESH
+}
+
+model RevokedToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  createdAt DateTime @default(now())
 }

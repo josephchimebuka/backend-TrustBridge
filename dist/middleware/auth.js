@@ -132,9 +132,7 @@ const forgotPassword = (req, res) => __awaiter(void 0, void 0, void 0, function*
         // Store the token in the DB (optional but good for reference)
         yield prisma_1.default.user.update({
             where: { email },
-            data: {
-                resetToken: token
-            },
+            data: { resetToken: token },
         });
         // Configure email transporter
         const transporter = nodemailer_1.default.createTransport({

@@ -15,9 +15,15 @@ class AuthService {
     const hashedPassword = await bcrypt.hash(dto.password, SALT_ROUNDS);
 
     const user = await prisma.user.create({
-      data: { email: dto.email, password: hashedPassword },
+      data: {
+        email: dto.email,
+        password: hashedPassword,
+        name: dto.name, 
+        walletAddress: '', 
+        nonce: '',
+      },
     });
-
+    
     return { user, tokens: await this.generateTokens(user.id) };
   }
 
@@ -57,39 +63,39 @@ class AuthService {
 
     const hashedRefreshToken = await bcrypt.hash(refreshToken, SALT_ROUNDS);
 
-    const refreshTokensCount = await prisma.token.count({
-      where: { userId, tokenType: "REFRESH" },
+    const refreshTokensCount = await prisma.refreshToken.count({
+      where: { userId, type: "REFRESH" },
     });
 
     if (refreshTokensCount >= MAX_REFRESH_TOKENS) {
-      const oldestToken = await prisma.token.findFirst({
+      const oldestToken = await prisma.refreshToken.findFirst({
         where: {
           userId,
-          tokenType: "REFRESH",
+          type: "REFRESH",
         },
-        orderBy: { expiresIn: "asc" },
+        orderBy: { expiresAt: "asc" },
       });
     
       if (oldestToken) {
-        await prisma.token.delete({
+        await prisma.refreshToken.delete({
           where: { id: oldestToken.id }, 
         });
       }
     }
     
-    await prisma.token.createMany({
+    await prisma.refreshToken.createMany({
       data: [
         {
           userId,
           token: accessToken,
-          expiresIn: new Date(Date.now() + 15 * 60 * 1000), 
-          tokenType: "ACCESS",
+          expiresAt: new Date(Date.now() + 15 * 60 * 1000), 
+          type: "ACCESS",
         },
         {
           userId,
           token: hashedRefreshToken,
-          expiresIn: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), 
-          tokenType: "REFRESH",
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), 
+          type: "REFRESH",
         },
       ],
     });
@@ -109,16 +115,16 @@ class AuthService {
     try {
       const payload = jwt.verify(dto.refreshToken, refreshSecret) as { userId: string };
 
-      const storedToken = await prisma.token.findFirst({
-        where: { userId: payload.userId, tokenType: "REFRESH" },
-        orderBy: { expiresIn: "desc" }, 
+      const storedToken = await prisma.refreshToken.findFirst({
+        where: { userId: payload.userId, type: "REFRESH" },
+        orderBy: { expiresAt: "desc" }, 
       });
 
       if (!storedToken || !(await bcrypt.compare(dto.refreshToken, storedToken.token))) {
         throw new Error("Invalid refresh token");
       }
 
-      await prisma.token.delete({ where: { id: storedToken.id } });
+      await prisma.refreshToken.delete({ where: { id: storedToken.id } });
 
       return { tokens: await this.generateTokens(payload.userId) };
     } catch (error) {

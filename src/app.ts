@@ -1,20 +1,19 @@
-import express from "express";
-import dotenv from "dotenv";
-import session from "express-session";
+import express from 'express';
+import dotenv from 'dotenv';
+import session from 'express-session';
+import passport from './config/passport';
+import loanRoutes from './routes/loanRoutes';
+import auditRoutes from './routes/auditRoutes';
+import creditScoreRoutes from './routes/creditScoreRoutes';
+import authRoutes from './routes/authRoutes';
+import analyticsRoutes from './routes/analyticsRoutes';
+import blockchainService from './services/blockchainService';
+import notificationRoutes from './routes/notificationRoutes';
+import { isAuthenticated, isLender } from './middleware/auth'; 
 import cookieParser from "cookie-parser";
-import passport from "./config/passport";
-import loanRoutes from "./routes/loanRoutes";
-import auditRoutes from "./routes/auditRoutes";
-import creditScoreRoutes from "./routes/creditScoreRoutes";
-import authRoutes from "./routes/authRoutes";
-import analyticsRoutes from "./routes/analyticsRoutes";
-import blockchainService from "./services/blockchainService";
-import notificationRoutes from "./routes/notificationRoutes";
-import { isAuthenticated, isLender } from "./middleware/auth";
-import db from "./config/db";
-import { ScheduleModule } from "@nestjs/schedule";
-import tokenCleanupService from "./utils/cron";
 import { scheduleTokenCleanup } from './services/tokenCleanup';
+import errorHandler from './middleware/errorHandler'; // Import the error handler
+import database from './config/db';
 
 dotenv.config();
 const app = express();
@@ -42,9 +41,9 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // Database Connection Check
-db.connect()
-  .then(() => console.log("✅ Connected to PostgreSQL"))
-  .catch((err: any) => console.error("❌ Database connection error:", err));
+database.db.connect()
+  .then(() => console.log('✅ Connected to PostgreSQL'))
+  .catch((err: any) => console.error('❌ Database connection error:', err));
 
 // Health check route
 app.get("/health", async (req, res) => {
@@ -67,8 +66,8 @@ app.use("/api/notifications", isAuthenticated, notificationRoutes);
 
 
 // Start Token Cleanup Service (Runs Every Minute)
-ScheduleModule.forRoot();
-tokenCleanupService.cleanExpiredTokens();
+// ScheduleModule.forRoot();
+// tokenCleanupService.cleanExpiredTokens();
 
 // Error handling middleware
 app.use(

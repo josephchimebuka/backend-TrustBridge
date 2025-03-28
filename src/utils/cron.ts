@@ -9,9 +9,9 @@ class TokenCleanupService {
 
   async cleanExpiredTokens() {
     try {
-      const result = await prisma.token.deleteMany({
+      const result = await prisma.refreshToken.deleteMany({
         where: {
-          expiresIn: { lt: new Date() }, 
+          expiresAt: { lt: new Date() }, 
         },
       });
       console.log(`✅ Deleted ${result.count} expired tokens.`);
