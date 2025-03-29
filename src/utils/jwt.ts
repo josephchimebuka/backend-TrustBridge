@@ -1,5 +1,4 @@
 import jwt from "jsonwebtoken";
-import { User } from "../models/user";
 import { type IJWTPayload } from "../interfaces";
 import { IAuthUser } from "../interfaces";
 
@@ -40,7 +39,7 @@ export const generateAccessToken = (user: IAuthUser): string => {
 };
 
 
-export const generateRefreshToken = (user: User, origin?: string): string => {
+export const generateRefreshToken = (user: IAuthUser, origin?: string): string => {
   return jwt.sign(
     {
       walletAddress: user.walletAddress,
