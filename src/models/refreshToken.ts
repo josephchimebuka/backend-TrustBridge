@@ -1,5 +1,5 @@
 import prisma from "../config/prisma";
-import { User } from "./user";
+
 import {
   countActiveRefreshTokens,
   enforceTokenLimit,
@@ -39,7 +39,8 @@ export const createRefreshToken = async (
       expiresAt,
       isRevoked: false,
       family,
-      replacedByToken: previousToken,
+      token,
+      replacedByToken: previousToken ,
       ...deviceInfo,
     },
   });

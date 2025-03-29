@@ -40,7 +40,7 @@ export const generateAccessToken = (user: IAuthUser): string => {
 };
 
 
-export const generateRefreshToken = (user: User, origin?: string): string => {
+export const generateRefreshToken = (user: IAuthUser, origin?: string): string => {
   return jwt.sign(
     {
       walletAddress: user.walletAddress,

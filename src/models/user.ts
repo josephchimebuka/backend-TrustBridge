@@ -28,7 +28,7 @@ export const createUser = async (walletAddress: string): Promise<IUser> => {
     walletAddress,
     nonce: await generateNonce(),
     createdAt: new Date(),
-  };
+   } as IUser;
   users.push(user);
   return user;
 };
